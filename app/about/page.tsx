@@ -1,8 +1,20 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Navbar from "@/components/marketing/Navbar"
 import Footer from "@/components/marketing/Footer"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Shield, Award } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "About — GoodStanding.ai",
+  description: "GoodStanding.ai was built for founders who shouldn't need a lawyer to stay compliant. Learn about our mission to make startup compliance simple and stress-free.",
+  openGraph: {
+    title: "About — GoodStanding.ai",
+    description: "Built for founders who shouldn't need a lawyer to stay compliant.",
+    url: "https://goodstanding.ai/about",
+  },
+  twitter: { card: "summary_large_image" },
+}
 
 export default function AboutPage() {
   return (

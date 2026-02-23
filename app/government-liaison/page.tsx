@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Navbar from "@/components/marketing/Navbar"
 import Footer from "@/components/marketing/Footer"
@@ -12,6 +13,17 @@ import {
   Award,
   AlertCircle,
 } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Government Liaison — GoodStanding.ai",
+  description: "Enrolled agents who call the IRS and state agencies on your behalf. IRS notice resolution, state compliance calls, audit representation, and more.",
+  openGraph: {
+    title: "Government Liaison — GoodStanding.ai",
+    description: "Enrolled agents who call the IRS and state agencies on your behalf.",
+    url: "https://goodstanding.ai/government-liaison",
+  },
+  twitter: { card: "summary_large_image" },
+}
 
 const capabilities = [
   {

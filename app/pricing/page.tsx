@@ -1,8 +1,20 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Navbar from "@/components/marketing/Navbar"
 import Footer from "@/components/marketing/Footer"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, X, ArrowRight } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Pricing — GoodStanding.ai",
+  description: "Simple, transparent pricing for startup compliance. Start free and scale as you grow — from entity formation to ongoing compliance monitoring.",
+  openGraph: {
+    title: "Pricing — GoodStanding.ai",
+    description: "Simple, transparent pricing for startup compliance. Start free and scale as you grow.",
+    url: "https://goodstanding.ai/pricing",
+  },
+  twitter: { card: "summary_large_image" },
+}
 
 const tiers = [
   {

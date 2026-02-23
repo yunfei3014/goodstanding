@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Navbar from "@/components/marketing/Navbar"
 import Footer from "@/components/marketing/Footer"
@@ -10,6 +11,17 @@ import {
   CheckCircle2,
   ArrowRight,
 } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Services — GoodStanding.ai",
+  description: "From entity formation to ongoing compliance monitoring, foreign qualification, and government liaison — GoodStanding.ai handles every compliance need for your startup.",
+  openGraph: {
+    title: "Services — GoodStanding.ai",
+    description: "Entity formation, compliance monitoring, and government liaison for startups.",
+    url: "https://goodstanding.ai/services",
+  },
+  twitter: { card: "summary_large_image" },
+}
 
 const services = [
   {

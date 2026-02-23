@@ -1,8 +1,20 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Navbar from "@/components/marketing/Navbar"
 import Footer from "@/components/marketing/Footer"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Clock } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Resources — GoodStanding.ai",
+  description: "Compliance guides for startup founders. Delaware C-corps, IRS notices, franchise tax, foreign qualification — written by enrolled agents, not lawyers.",
+  openGraph: {
+    title: "Resources — GoodStanding.ai",
+    description: "Compliance guides for startup founders. Written by enrolled agents.",
+    url: "https://goodstanding.ai/resources",
+  },
+  twitter: { card: "summary_large_image" },
+}
 
 const articles = [
   {
