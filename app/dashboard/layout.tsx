@@ -31,6 +31,7 @@ import {
   Activity,
   Search,
   ClipboardList,
+  CreditCard,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -42,6 +43,7 @@ const navItems = [
   { href: "/dashboard/activity", icon: Activity, label: "Activity" },
   { href: "/dashboard/report", icon: ClipboardList, label: "Report" },
   { href: "/dashboard/government", icon: Phone, label: "Government Liaison" },
+  { href: "/dashboard/billing", icon: CreditCard, label: "Billing" },
   { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ]
 
