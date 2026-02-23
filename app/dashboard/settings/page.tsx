@@ -498,11 +498,13 @@ export default function SettingsPage() {
             <Building2 className="w-4 h-4 text-slate-500" />
             <h2 className="font-bold text-slate-900">Companies</h2>
           </div>
-          <a href="/signup">
-            <Button size="sm" className="bg-[#1B2B4B] text-white hover:bg-[#243461] text-xs">
-              + Add company
-            </Button>
-          </a>
+          <Button
+            size="sm"
+            className="bg-[#1B2B4B] text-white hover:bg-[#243461] text-xs"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-add-company"))}
+          >
+            + Add company
+          </Button>
         </div>
         {companies.length === 0 ? (
           <p className="text-sm text-slate-400 text-center py-4">No companies yet.</p>

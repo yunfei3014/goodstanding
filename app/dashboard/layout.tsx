@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase"
 import type { Company, Filing } from "@/lib/supabase"
 import { generateDefaultFilings } from "@/lib/filings"
 import { CompanyContext } from "@/lib/company-context"
+import { AddCompanyModal } from "@/components/dashboard/AddCompanyModal"
 import {
   Shield,
   LayoutDashboard,
@@ -230,11 +231,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [companyMenuOpen, setCompanyMenuOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [addCompanyOpen, setAddCompanyOpen] = useState(false)
   const [companies, setCompanies] = useState<Company[]>([])
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [filings, setFilings] = useState<Filing[]>([])
   const [user, setUser] = useState<{ email: string; full_name: string; plan: string } | null>(null)
   const notifRef = useRef<HTMLDivElement>(null)
+
+  // Listen for settings page "Add company" event
+  useEffect(() => {
+    const handler = () => setAddCompanyOpen(true)
+    window.addEventListener("open-add-company", handler)
+    return () => window.removeEventListener("open-add-company", handler)
+  }, [])
 
   // Close notification panel on outside click
   useEffect(() => {
@@ -362,8 +371,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     (f) => f.status === "overdue" || (f.status === "pending" && f.due_date >= todayStr && f.due_date <= in7Str)
   ).length
 
+  function handleCompanyAdded(company: Company) {
+    setCompanies((prev) => [...prev, company])
+    setSelectedCompany(company)
+    setAddCompanyOpen(false)
+    // Refresh notification filings list
+    const supabase = createClient()
+    supabase
+      .from("filings")
+      .select("*")
+      .in("company_id", [...companies.map((c) => c.id), company.id])
+      .neq("status", "completed")
+      .order("due_date", { ascending: true })
+      .then(({ data }) => setFilings(data ?? []))
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {addCompanyOpen && (
+        <AddCompanyModal
+          onClose={() => setAddCompanyOpen(false)}
+          onAdded={handleCompanyAdded}
+        />
+      )}
       {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-[#0F1829] flex flex-col transition-transform duration-200 lg:static lg:translate-x-0",
@@ -416,14 +446,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
               ))}
               <div className="border-t border-white/10">
-                <Link
-                  href="/signup"
-                  className="flex items-center gap-2 px-3 py-2.5 text-emerald-400 hover:bg-white/10 transition-colors"
-                  onClick={() => setCompanyMenuOpen(false)}
+                <button
+                  onClick={() => { setCompanyMenuOpen(false); setAddCompanyOpen(true) }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-emerald-400 hover:bg-white/10 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span className="text-sm">Add company</span>
-                </Link>
+                </button>
               </div>
             </div>
           )}
@@ -523,12 +552,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </div>
 
-            <Link href="/signup">
-              <button className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors">
-                <Plus className="w-3.5 h-3.5" />
-                Add company
-              </button>
-            </Link>
+            <button
+              onClick={() => setAddCompanyOpen(true)}
+              className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add company
+            </button>
           </div>
         </header>
 
