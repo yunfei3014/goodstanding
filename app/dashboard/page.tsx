@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase"
 import type { Company, Filing, GovernmentInteraction } from "@/lib/supabase"
+import { SetupChecklist, type ChecklistItem } from "@/components/dashboard/SetupChecklist"
 import {
   CheckCircle2,
   AlertCircle,
@@ -57,8 +58,26 @@ export default function DashboardPage() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [filings, setFilings] = useState<Filing[]>([])
   const [interactions, setInteractions] = useState<GovernmentInteraction[]>([])
+  const [docCounts, setDocCounts] = useState<Record<string, number>>({})
   const [firstName, setFirstName] = useState("")
   const [loading, setLoading] = useState(true)
+  const [dismissedChecklists, setDismissedChecklists] = useState<Set<string>>(new Set())
+
+  // Load dismissed state from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("gs_checklist_dismissed")
+      if (raw) setDismissedChecklists(new Set(JSON.parse(raw)))
+    } catch {}
+  }, [])
+
+  const dismissChecklist = useCallback((companyId: string) => {
+    setDismissedChecklists((prev) => {
+      const next = new Set(prev).add(companyId)
+      try { localStorage.setItem("gs_checklist_dismissed", JSON.stringify([...next])) } catch {}
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     const supabase = createClient()
@@ -95,6 +114,20 @@ export default function DashboardPage() {
       setCompanies(companies)
       setFilings(filings)
       setInteractions(interactionsData ?? [])
+
+      // Load document counts per company
+      if (companies.length > 0) {
+        const { data: docsData } = await supabase
+          .from("documents")
+          .select("company_id")
+          .in("company_id", companies.map((c) => c.id))
+        const counts: Record<string, number> = {}
+        for (const doc of docsData ?? []) {
+          counts[doc.company_id] = (counts[doc.company_id] ?? 0) + 1
+        }
+        setDocCounts(counts)
+      }
+
       setLoading(false)
     }
     load()
@@ -114,6 +147,60 @@ export default function DashboardPage() {
   const overdueFilings = filings.filter((f) => f.status === "overdue").length
   const recentInteractions = interactions.slice(0, 3)
 
+  // Build setup checklist for the primary company
+  function buildChecklist(company: Company): ChecklistItem[] {
+    const companyFilings = filings.filter((f) => f.company_id === company.id)
+    const hasOverdue = companyFilings.some((f) => f.status === "overdue")
+    const hasFilings = companyFilings.length > 0
+    const hasDocs = (docCounts[company.id] ?? 0) > 0
+    return [
+      {
+        id: "company",
+        label: "Company created",
+        description: `${company.name} has been added to your dashboard.`,
+        done: true,
+        href: "/dashboard/settings",
+        cta: "View",
+      },
+      {
+        id: "ein",
+        label: "Add your EIN",
+        description: "Required for tax filings and banking. Format: XX-XXXXXXX.",
+        done: !!company.ein,
+        href: "/dashboard/settings",
+        cta: "Add EIN",
+      },
+      {
+        id: "formed_at",
+        label: "Set your formation date",
+        description: "The date your entity was officially formed or incorporated.",
+        done: !!company.formed_at,
+        href: "/dashboard/settings",
+        cta: "Set date",
+      },
+      {
+        id: "documents",
+        label: "Upload key documents",
+        description: "Certificate of Incorporation, Operating Agreement, or EIN letter.",
+        done: hasDocs,
+        href: "/dashboard/documents",
+        cta: "Upload",
+      },
+      {
+        id: "filings",
+        label: "Review your compliance filings",
+        description: hasOverdue ? "You have overdue filings that need attention." : "Mark any completed filings and confirm upcoming due dates.",
+        done: hasFilings && !hasOverdue,
+        href: "/dashboard/compliance",
+        cta: hasOverdue ? "Fix overdue" : "Review",
+      },
+    ]
+  }
+
+  const primaryCompany = companies[0]
+  const checklistItems = primaryCompany ? buildChecklist(primaryCompany) : []
+  const showChecklist = primaryCompany && !dismissedChecklists.has(primaryCompany.id)
+
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto">
       {/* Welcome */}
@@ -129,6 +216,15 @@ export default function DashboardPage() {
             : "All companies are in good standing. You're all clear."}
         </p>
       </div>
+
+      {/* Setup checklist */}
+      {showChecklist && (
+        <SetupChecklist
+          companyId={primaryCompany.id}
+          items={checklistItems}
+          onDismiss={() => dismissChecklist(primaryCompany.id)}
+        />
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
