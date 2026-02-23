@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr"
+import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 import { NextResponse, type NextRequest } from "next/server"
 import { generateDefaultFilings } from "@/lib/filings"
@@ -65,6 +66,24 @@ export async function GET(request: NextRequest) {
             await supabase.auth.updateUser({ data: { pending_company: null } })
           }
         }
+      }
+
+      // Accept pending team invite if present
+      const pendingInvite = user?.user_metadata?.pending_invite
+      if (pendingInvite && user) {
+        try {
+          const serviceClient = createServiceClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            { auth: { persistSession: false } }
+          )
+          await serviceClient
+            .from("team_invites")
+            .update({ status: "accepted", accepted_at: new Date().toISOString() })
+            .eq("id", pendingInvite)
+            .eq("email", user.email ?? "")
+          await supabase.auth.updateUser({ data: { pending_invite: null } })
+        } catch {}
       }
 
       return NextResponse.redirect(`${origin}${next}`)

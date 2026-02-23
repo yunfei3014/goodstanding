@@ -118,6 +118,8 @@ function SignupContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const initialPlan = searchParams.get("plan") || "launch"
+  const inviteId = searchParams.get("invite") ?? ""
+  const inviteEmail = searchParams.get("email") ?? ""
 
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -130,7 +132,7 @@ function SignupContent() {
     founderEmail: "",
     coFounders: "",
     plan: initialPlan,
-    email: "",
+    email: inviteEmail,
     password: "",
   })
 
@@ -170,6 +172,8 @@ function SignupContent() {
             state_of_incorporation: formData.state,
             plan: formData.plan,
           },
+          // Store invite ID so the callback can mark it accepted
+          ...(inviteId ? { pending_invite: inviteId } : {}),
         },
       },
     })
