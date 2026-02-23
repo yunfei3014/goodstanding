@@ -687,6 +687,190 @@ function WebhookPanel() {
   )
 }
 
+// ─── API Key panel ────────────────────────────────────────────────────────────
+
+type ApiKeyMeta = {
+  id: string
+  name: string
+  key_prefix: string
+  last_used_at: string | null
+  created_at: string
+}
+
+function ApiKeyPanel() {
+  const [keys, setKeys] = useState<ApiKeyMeta[]>([])
+  const [loading, setLoading] = useState(true)
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [newKey, setNewKey] = useState<string | null>(null)
+  const [copiedKey, setCopiedKey] = useState(false)
+  const [error, setError] = useState("")
+
+  useEffect(() => { loadKeys() }, [])
+
+  async function loadKeys() {
+    const res = await fetch("/api/keys")
+    if (res.ok) {
+      const { keys: data } = await res.json()
+      setKeys(data ?? [])
+    }
+    setLoading(false)
+  }
+
+  async function handleCreate() {
+    setError("")
+    if (!name.trim()) { setError("Enter a name for this key"); return }
+    setSaving(true)
+    const res = await fetch("/api/keys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim() }),
+    })
+    setSaving(false)
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setError(d.error ?? "Failed to create key")
+      return
+    }
+    const { key, meta } = await res.json()
+    setNewKey(key)
+    setKeys((prev) => [meta, ...prev])
+    setAdding(false)
+    setName("")
+  }
+
+  async function handleRevoke(id: string) {
+    if (!confirm("Revoke this API key? Any applications using it will lose access immediately.")) return
+    await fetch(`/api/keys?id=${id}`, { method: "DELETE" })
+    setKeys((prev) => prev.filter((k) => k.id !== id))
+  }
+
+  function copyKey() {
+    if (!newKey) return
+    navigator.clipboard.writeText(newKey).catch(() => {})
+    setCopiedKey(true)
+    setTimeout(() => setCopiedKey(false), 2500)
+  }
+
+  function fmtDate(iso: string | null) {
+    if (!iso) return "Never"
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  }
+
+  return (
+    <div className="space-y-4 pt-2">
+      {/* New key reveal */}
+      {newKey && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+          <p className="text-xs font-bold text-emerald-800 mb-2 flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5" />
+            API key created — copy it now, it won't be shown again
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-800 truncate">
+              {newKey}
+            </code>
+            <button
+              onClick={copyKey}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-emerald-300 bg-white text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex-shrink-0 transition-colors"
+            >
+              {copiedKey ? <><Check className="w-3.5 h-3.5" />Copied!</> : <><Copy className="w-3.5 h-3.5" />Copy</>}
+            </button>
+          </div>
+          <button onClick={() => setNewKey(null)} className="text-xs text-emerald-600 hover:text-emerald-800 mt-2 font-semibold">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Existing keys */}
+      {loading ? (
+        <p className="text-xs text-slate-400">Loading...</p>
+      ) : keys.length > 0 ? (
+        <div className="divide-y divide-slate-50">
+          {keys.map((k) => (
+            <div key={k.id} className="flex items-center justify-between py-3 gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900">{k.name}</p>
+                <p className="text-xs text-slate-400 font-mono">{k.key_prefix}••••••••••••••••••••••••••••••</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Created {fmtDate(k.created_at)} · Last used {fmtDate(k.last_used_at)}
+                </p>
+              </div>
+              <button
+                onClick={() => handleRevoke(k.id)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-700 flex-shrink-0 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Revoke
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : !adding && (
+        <p className="text-xs text-slate-400">No API keys yet.</p>
+      )}
+
+      {/* Add form */}
+      {adding ? (
+        <div className="space-y-3 bg-slate-50 rounded-xl p-4 border border-slate-200">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Key name</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              placeholder="e.g. CI Pipeline, Zapier, My App"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              onClick={handleCreate}
+              disabled={saving}
+              className="flex items-center gap-2 bg-[#1B2B4B] hover:bg-[#243461] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-70"
+            >
+              {saving ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating...</> : "Create key"}
+            </button>
+            <button
+              onClick={() => { setAdding(false); setError(""); setName("") }}
+              className="text-sm text-slate-500 hover:text-slate-700 px-4 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : keys.length < 5 ? (
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 rounded-xl transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Create API key
+        </button>
+      ) : (
+        <p className="text-xs text-slate-400">Maximum of 5 keys reached.</p>
+      )}
+
+      {/* API reference */}
+      <div className="bg-slate-900 rounded-xl p-4">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Example request</p>
+        <pre className="text-xs text-emerald-400 overflow-x-auto leading-relaxed">{`curl https://goodstanding.ai/api/v1/companies \\
+  -H "Authorization: Bearer gsa_your_key" \\
+  -H "Content-Type: application/json"`}</pre>
+      </div>
+
+      <p className="text-xs text-slate-400">
+        API base URL: <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">https://goodstanding.ai/api/v1</code>
+        {" "}· Endpoints: <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">/companies</code>,{" "}
+        <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">/companies/{"{id}"}/filings</code>
+      </p>
+    </div>
+  )
+}
+
 // ─── Integration card ──────────────────────────────────────────────────────────
 
 function IntegrationCard({
@@ -961,6 +1145,17 @@ export default function IntegrationsPage() {
           >
             <WebhookPanel />
           </IntegrationCard>
+
+          <IntegrationCard
+            icon={Link2}
+            iconBg="bg-purple-50"
+            iconColor="text-purple-600"
+            name="API Access"
+            description="Build custom integrations with the GoodStanding REST API"
+            connected={false}
+          >
+            <ApiKeyPanel />
+          </IntegrationCard>
         </div>
       </div>
 
@@ -991,13 +1186,6 @@ export default function IntegrationsPage() {
               iconColor: "text-sky-600",
               name: "Xero",
               description: "Connect compliance deadlines to your accounting workflow",
-            },
-            {
-              icon: Link2,
-              iconBg: "bg-purple-50",
-              iconColor: "text-purple-600",
-              name: "API Access",
-              description: "Build custom integrations with the GoodStanding REST API",
             },
           ].map((item) => (
             <IntegrationCard
