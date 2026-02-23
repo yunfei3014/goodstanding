@@ -895,16 +895,32 @@ function ApiKeyPanel() {
 
       {/* API reference */}
       <div className="bg-slate-900 rounded-xl p-4">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Example request</p>
-        <pre className="text-xs text-emerald-400 overflow-x-auto leading-relaxed">{`curl https://goodstanding.ai/api/v1/companies \\
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Example requests</p>
+        <pre className="text-xs text-emerald-400 overflow-x-auto leading-relaxed">{`# List companies
+curl https://goodstanding.ai/api/v1/companies \\
+  -H "Authorization: Bearer gsa_your_key"
+
+# Get single company + filing counts
+curl https://goodstanding.ai/api/v1/companies/{id} \\
+  -H "Authorization: Bearer gsa_your_key"
+
+# List filings (filter by status)
+curl "https://goodstanding.ai/api/v1/companies/{id}/filings?status=overdue" \\
+  -H "Authorization: Bearer gsa_your_key"
+
+# Mark a filing as completed
+curl -X PATCH https://goodstanding.ai/api/v1/companies/{id}/filings/{filingId} \\
   -H "Authorization: Bearer gsa_your_key" \\
-  -H "Content-Type: application/json"`}</pre>
+  -H "Content-Type: application/json" \\
+  -d '{"status":"completed","amount":400}'`}</pre>
       </div>
 
       <p className="text-xs text-slate-400">
         API base URL: <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">https://goodstanding.ai/api/v1</code>
-        {" "}· Endpoints: <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">/companies</code>,{" "}
-        <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">/companies/{"{id}"}/filings</code>
+        {" "}· Endpoints: <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">GET /companies</code>,{" "}
+        <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">GET /companies/:id</code>,{" "}
+        <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">GET /companies/:id/filings</code>,{" "}
+        <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">PATCH /companies/:id/filings/:id</code>
       </p>
     </div>
   )
