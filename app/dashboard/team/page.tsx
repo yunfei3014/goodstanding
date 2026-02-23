@@ -158,7 +158,7 @@ function InviteModal({
   onInvite,
 }: {
   onClose: () => void
-  onInvite: (email: string, role: Role) => void
+  onInvite: (email: string, role: Role) => Promise<void>
 }) {
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<Role>("member")
@@ -175,10 +175,8 @@ function InviteModal({
       return
     }
     setSending(true)
-    // Simulate a brief send delay
-    await new Promise((r) => setTimeout(r, 600))
+    await onInvite(email.trim().toLowerCase(), role)
     setSending(false)
-    onInvite(email.trim().toLowerCase(), role)
     onClose()
   }
 
@@ -323,51 +321,54 @@ export default function TeamPage() {
     async function load() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setOwnerEmail(user.email ?? "")
-        setOwnerName(user.user_metadata?.full_name ?? user.email ?? "")
-        setUserId(user.id)
-        // Load invites from localStorage keyed by user ID
-        try {
-          const raw = localStorage.getItem(`gs_team_invites_${user.id}`)
-          if (raw) setInvites(JSON.parse(raw))
-        } catch {}
+      if (!user) { setLoading(false); return }
+      setOwnerEmail(user.email ?? "")
+      setOwnerName(user.user_metadata?.full_name ?? user.email ?? "")
+      setUserId(user.id)
+      // Load invites from Supabase
+      const { data: rows } = await supabase
+        .from("team_invites")
+        .select("id, email, role, status, invited_at")
+        .eq("owner_id", user.id)
+        .order("invited_at", { ascending: false })
+      if (rows) {
+        setInvites(rows.map((r) => ({
+          id: r.id,
+          email: r.email,
+          role: r.role as Role,
+          invitedAt: r.invited_at,
+          status: r.status as "pending" | "accepted",
+        })))
       }
       setLoading(false)
     }
     load()
   }, [])
 
-  function saveInvites(next: Invite[]) {
-    setInvites(next)
-    try {
-      localStorage.setItem(`gs_team_invites_${userId}`, JSON.stringify(next))
-    } catch {}
-  }
-
-  function handleInvite(email: string, role: Role) {
+  async function handleInvite(email: string, role: Role) {
     const exists = invites.some((i) => i.email === email)
     if (exists) return
-    const next: Invite[] = [
-      ...invites,
-      {
-        id: crypto.randomUUID(),
-        email,
-        role,
-        invitedAt: new Date().toISOString(),
-        status: "pending",
-      },
-    ]
-    saveInvites(next)
+    const res = await fetch("/api/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, role }),
+    })
+    if (!res.ok) return
+    const { inviteId } = await res.json()
+    setInvites((prev) => [
+      { id: inviteId, email, role, invitedAt: new Date().toISOString(), status: "pending" },
+      ...prev,
+    ])
   }
 
-  function handleRemove(id: string) {
-    saveInvites(invites.filter((i) => i.id !== id))
+  async function handleRemove(id: string) {
+    await fetch(`/api/invite?id=${id}`, { method: "DELETE" })
+    setInvites((prev) => prev.filter((i) => i.id !== id))
     setRemovingId(null)
   }
 
-  function handleChangeRole(id: string, role: Role) {
-    saveInvites(invites.map((i) => (i.id === id ? { ...i, role } : i)))
+  function handleChangeRole(_id: string, _role: Role) {
+    // Role changes require a new invite; UI handled via remove + re-invite
   }
 
   function handleCopyLink(id: string) {
