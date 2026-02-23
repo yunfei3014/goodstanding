@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Share2,
 } from "lucide-react"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "good_standing")
@@ -54,6 +55,67 @@ function FilingStatusLabel({ status }: { status: string }) {
   if (status === "completed") return <span className="text-xs text-emerald-600 font-semibold">Filed ✓</span>
   if (status === "overdue") return <span className="text-xs text-red-600 font-semibold">Overdue</span>
   return <span className="text-xs text-amber-600 font-semibold">Pending</span>
+}
+
+const HEALTH_COLORS = { completed: "#10b981", pending: "#f59e0b", overdue: "#ef4444" }
+
+function FilingHealthChart({ filings }: { filings: Filing[] }) {
+  if (filings.length === 0) {
+    return <p className="text-xs text-slate-400 text-center py-6">No filings tracked yet</p>
+  }
+
+  const completed = filings.filter((f) => f.status === "completed").length
+  const pending   = filings.filter((f) => f.status === "pending").length
+  const overdue   = filings.filter((f) => f.status === "overdue").length
+
+  const data = [
+    { name: "Filed",   value: completed, color: HEALTH_COLORS.completed },
+    { name: "Pending", value: pending,   color: HEALTH_COLORS.pending },
+    { name: "Overdue", value: overdue,   color: HEALTH_COLORS.overdue },
+  ].filter((d) => d.value > 0)
+
+  return (
+    <div>
+      <div className="relative">
+        <ResponsiveContainer width="100%" height={130}>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={42}
+              outerRadius={60}
+              paddingAngle={3}
+              dataKey="value"
+              startAngle={90}
+              endAngle={-270}
+            >
+              {data.map((entry, i) => (
+                <Cell key={i} fill={entry.color} strokeWidth={0} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value: number, name: string) => [value, name]}
+              contentStyle={{ fontSize: "11px", borderRadius: "8px", border: "1px solid #e2e8f0", padding: "4px 8px" }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+        {/* Center label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <p className="text-2xl font-bold text-slate-900 leading-none">{filings.length}</p>
+          <p className="text-xs text-slate-400">total</p>
+        </div>
+      </div>
+      <div className="flex justify-center gap-4 mt-2">
+        {data.map((entry, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
+            <span className="text-xs text-slate-500">{entry.name} <span className="font-semibold text-slate-700">{entry.value}</span></span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function DashboardPage() {
@@ -420,37 +482,26 @@ export default function DashboardPage() {
           <div className="space-y-5">
             {/* Compliance health */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-500" />
-                Compliance health
+                Filing breakdown
               </h3>
-              <div className="space-y-3">
-                {[
-                  {
-                    label: "Good standing",
-                    value: `${goodCount}/${companies.length} entities`,
-                    color: goodCount === companies.length ? "bg-emerald-400" : "bg-amber-400",
-                  },
-                  {
-                    label: "Filings current",
-                    value: `${filings.filter((f) => f.status === "completed").length}/${filings.length} filings`,
-                    color: overdueFilings === 0 ? "bg-emerald-400" : "bg-red-400",
-                  },
-                  {
-                    label: "Overdue items",
-                    value: overdueFilings === 0 ? "All clear" : `${overdueFilings} action needed`,
-                    color: overdueFilings === 0 ? "bg-emerald-400" : "bg-red-400",
-                  },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-slate-500">{item.value}</span>
+              <FilingHealthChart filings={filings} />
+              {filings.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full ${goodCount === companies.length ? "bg-emerald-400" : "bg-amber-400"}`} />
+                    <span className="text-xs text-slate-500">
+                      {goodCount}/{companies.length} entities in good standing
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <Link href="/dashboard/compliance">
+                    <button className="text-xs text-emerald-600 font-semibold hover:underline">
+                      Details
+                    </button>
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Government Liaison */}
