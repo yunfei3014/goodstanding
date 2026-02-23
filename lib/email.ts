@@ -201,3 +201,55 @@ ${upcomingBlock}
 
   return resend.emails.send({ from: FROM, to, subject, html: emailWrapper(content) })
 }
+
+// ─── Welcome email ────────────────────────────────────────────────────────────
+
+export function sendWelcomeEmail(to: string, firstName: string, companyName: string) {
+  const name = firstName || "there"
+  const steps = [
+    ["Your compliance calendar is live", "Annual report, franchise tax, and BOI filing deadlines are pre-loaded and tracked automatically."],
+    ["We'll remind you before deadlines", "Email alerts 60, 30, and 7 days before each filing. Configure in Integrations settings."],
+    ["Upload your formation documents", "Store your Certificate of Incorporation, EIN letter, and operating agreement in the document vault."],
+    ["Request a government liaison call", "Got an IRS notice or state letter? Our Enrolled Agents handle it. Go to the Government Liaison tab."],
+  ]
+
+  const stepsHtml = steps.map(([title, desc]) => `
+<tr>
+  <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td style="padding-right:12px;vertical-align:top;padding-top:2px;">
+        <span style="display:inline-block;width:20px;height:20px;background:#ecfdf5;border-radius:50%;text-align:center;line-height:20px;font-size:11px;color:#10b981;font-weight:bold;">✓</span>
+      </td>
+      <td>
+        <p style="margin:0 0 2px;font-size:14px;font-weight:700;color:#0f172a;">${title}</p>
+        <p style="margin:0;font-size:13px;color:#64748b;">${desc}</p>
+      </td>
+    </tr></table>
+  </td>
+</tr>`).join("")
+
+  const content = `
+<h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;">
+  Welcome to GoodStanding.ai, ${name}. 🎉
+</h1>
+<p style="margin:0 0 20px;font-size:14px;color:#64748b;line-height:1.6;">
+  <strong>${companyName}</strong> is now in your compliance dashboard. Here's what happens next:
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+  ${stepsHtml}
+</table>
+<a href="https://goodstanding.ai/dashboard" style="display:inline-block;background:#0F1829;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:10px;margin-bottom:20px;">
+  Go to your dashboard →
+</a>
+<p style="margin:20px 0 0;font-size:13px;color:#94a3b8;">
+  Questions? Reply to this email or visit
+  <a href="https://goodstanding.ai/contact" style="color:#10b981;">goodstanding.ai/contact</a>.
+</p>`
+
+  return resend.emails.send({
+    from: "GoodStanding.ai <hello@goodstanding.ai>",
+    to,
+    subject: `Welcome to GoodStanding.ai — ${companyName} is live`,
+    html: emailWrapper(content),
+  })
+}

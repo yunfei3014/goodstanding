@@ -18,6 +18,8 @@ import {
   X,
   Loader2,
   Download,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react"
 
 const PLAN_LABELS: Record<string, { label: string; price: string; features: string }> = {
@@ -236,6 +238,8 @@ export default function SettingsPage() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [editingCompany, setEditingCompany] = useState<Company | null>(null)
+  const [deletingCompany, setDeletingCompany] = useState<Company | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Account form
   const [fullName, setFullName] = useState("")
@@ -311,6 +315,20 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleDeleteCompany(company: Company) {
+    setDeleting(true)
+    const supabase = createClient()
+    // Cascade deletes filings/documents/interactions if FK constraints exist;
+    // otherwise Supabase RLS blocks access anyway after company is removed.
+    await supabase.from("filings").delete().eq("company_id", company.id)
+    await supabase.from("documents").delete().eq("company_id", company.id)
+    await supabase.from("government_interactions").delete().eq("company_id", company.id)
+    await supabase.from("companies").delete().eq("id", company.id)
+    setCompanies((prev) => prev.filter((c) => c.id !== company.id))
+    setDeletingCompany(null)
+    setDeleting(false)
+  }
+
   const plan = companies[0]?.plan ?? "launch"
   const planInfo = PLAN_LABELS[plan] ?? PLAN_LABELS.launch
   const nextPlan = NEXT_PLAN[plan]
@@ -335,6 +353,46 @@ export default function SettingsPage() {
             setEditingCompany(null)
           }}
         />
+      )}
+
+      {/* Delete company confirmation modal */}
+      {deletingCompany && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 mb-1">Delete company?</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  This will permanently delete <strong>{deletingCompany.name}</strong> and all associated
+                  filings, documents, and government interactions. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={() => setDeletingCompany(null)}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteCompany(deletingCompany)}
+                disabled={deleting}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-70"
+              >
+                {deleting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" />Deleting...</>
+                ) : (
+                  <><Trash2 className="w-4 h-4" />Delete permanently</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="mb-8">
@@ -546,13 +604,22 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => setEditingCompany(company)}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-[#1B2B4B] hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition-colors flex-shrink-0"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  Edit
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => setEditingCompany(company)}
+                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-[#1B2B4B] hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDeletingCompany(company)}
+                    className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>

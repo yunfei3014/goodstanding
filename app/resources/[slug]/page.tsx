@@ -583,8 +583,36 @@ export default async function ArticlePage({
     .filter((a) => a.slug !== slug && a.category === article.category)
     .slice(0, 2)
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.description,
+    datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
+    author: {
+      "@type": "Organization",
+      name: "GoodStanding.ai",
+      url: "https://goodstanding.ai",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "GoodStanding.ai",
+      url: "https://goodstanding.ai",
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://goodstanding.ai/resources/${slug}`,
+    },
+    url: `https://goodstanding.ai/resources/${slug}`,
+  }
+
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <Navbar />
 
       <div className="pt-24 pb-20 px-4 sm:px-6">

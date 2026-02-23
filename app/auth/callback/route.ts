@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 import { NextResponse, type NextRequest } from "next/server"
 import { generateDefaultFilings } from "@/lib/filings"
+import { sendWelcomeEmail } from "@/lib/email"
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -64,6 +65,11 @@ export async function GET(request: NextRequest) {
             }
             // Clear pending_company from metadata
             await supabase.auth.updateUser({ data: { pending_company: null } })
+            // Send welcome email (best-effort)
+            if (user.email) {
+              const firstName = (user.user_metadata?.full_name ?? "").split(" ")[0]
+              sendWelcomeEmail(user.email, firstName, newCompany.name).catch(() => {})
+            }
           }
         }
       }
