@@ -19,6 +19,7 @@ import {
   Mail,
   Lock,
 } from "lucide-react"
+import { generateDefaultFilings } from "@/lib/filings"
 
 const STEPS = [
   { id: 1, label: "Company", icon: Building2 },
@@ -182,15 +183,24 @@ function SignupContent() {
 
     // If session exists immediately (email confirmation disabled), create company now
     if (data.session) {
-      const { error: insertError } = await supabase.from("companies").insert({
-        user_id: data.user!.id,
-        name: formData.companyName,
-        entity_type: formData.entityType,
-        state_of_incorporation: formData.state,
-        plan: formData.plan,
-        status: "good_standing",
-      })
-      if (!insertError) {
+      const { data: newCompany, error: insertError } = await supabase
+        .from("companies")
+        .insert({
+          user_id: data.user!.id,
+          name: formData.companyName,
+          entity_type: formData.entityType,
+          state_of_incorporation: formData.state,
+          plan: formData.plan,
+          status: "good_standing",
+        })
+        .select()
+        .single()
+      if (!insertError && newCompany) {
+        // Seed default filings
+        const defaultFilings = generateDefaultFilings(newCompany)
+        if (defaultFilings.length > 0) {
+          await supabase.from("filings").insert(defaultFilings)
+        }
         // Clear pending_company from metadata
         await supabase.auth.updateUser({ data: { pending_company: null } })
       }

@@ -36,5 +36,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Auth pages (lower priority)
     { url: `${BASE_URL}/signup`,              lastModified: now, changeFrequency: "yearly",  priority: 0.5 },
     { url: `${BASE_URL}/login`,               lastModified: now, changeFrequency: "yearly",  priority: 0.4 },
+
+    // Legal pages
+    { url: `${BASE_URL}/terms`,               lastModified: now, changeFrequency: "yearly",  priority: 0.3 },
+    { url: `${BASE_URL}/privacy`,             lastModified: now, changeFrequency: "yearly",  priority: 0.3 },
   ]
 }
