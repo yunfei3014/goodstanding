@@ -8,6 +8,12 @@ import {
   type OverdueFiling,
 } from "@/lib/email"
 import { fireWebhooks } from "@/lib/webhook"
+import {
+  sendSlackMessage,
+  buildOverdueBlocks,
+  buildUpcomingBlocks,
+  buildDigestBlocks,
+} from "@/lib/slack"
 
 /**
  * GET /api/cron/send-reminders
@@ -39,8 +45,11 @@ export async function GET(req: NextRequest) {
 
   const { data: prefs } = await supabase
     .from("user_preferences")
-    .select("user_id, email_days, email_overdue_alerts, email_weekly_digest")
-    .eq("email_enabled", true)
+    .select(
+      "user_id, email_days, email_overdue_alerts, email_weekly_digest, " +
+      "slack_webhook_url, slack_overdue_alerts, slack_upcoming_alerts, slack_weekly_digest"
+    )
+    .or("email_enabled.eq.true,slack_webhook_url.not.is.null")
 
   if (!prefs?.length) {
     return NextResponse.json({ ok: true, emailsSent: 0, runAt: new Date().toISOString() })
@@ -126,6 +135,18 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         console.error(`Failed to send reminder to ${toEmail}:`, err)
       }
+      // Slack alert for upcoming filings
+      if (pref.slack_webhook_url && pref.slack_upcoming_alerts) {
+        const slackFilings = upcomingToSend.map((f) => ({
+          type: f.type, state: f.state, due_date: f.due_date,
+          companyName: f.companyName, daysUntilDue: f.daysUntilDue,
+        }))
+        await sendSlackMessage(
+          pref.slack_webhook_url,
+          `${upcomingToSend.length} filing${upcomingToSend.length !== 1 ? "s" : ""} coming up`,
+          buildUpcomingBlocks(slackFilings)
+        )
+      }
       // Fire webhooks for upcoming filings
       for (const f of upcomingToSend) {
         await fireWebhooks(supabase, pref.user_id, "filing.upcoming", {
@@ -167,6 +188,18 @@ export async function GET(req: NextRequest) {
           emailsSent++
         } catch (err) {
           console.error(`Failed to send overdue alert to ${toEmail}:`, err)
+        }
+        // Slack alert for overdue filings
+        if (pref.slack_webhook_url && pref.slack_overdue_alerts) {
+          const slackFilings = overdueToday.map((f) => ({
+            type: f.type, state: f.state, due_date: f.due_date,
+            companyName: f.companyName, daysOverdue: f.daysOverdue,
+          }))
+          await sendSlackMessage(
+            pref.slack_webhook_url,
+            `⚠️ ${overdueToday.length} filing${overdueToday.length !== 1 ? "s" : ""} overdue`,
+            buildOverdueBlocks(slackFilings)
+          )
         }
         // Fire webhooks for overdue filings
         for (const f of overdueToday) {
@@ -227,6 +260,22 @@ export async function GET(req: NextRequest) {
           emailsSent++
         } catch (err) {
           console.error(`Failed to send weekly digest to ${toEmail}:`, err)
+        }
+        // Slack weekly digest
+        if (pref.slack_webhook_url && pref.slack_weekly_digest) {
+          const slackUpcoming = digestUpcoming.map((f) => ({
+            type: f.type, state: f.state, due_date: f.due_date,
+            companyName: f.companyName, daysUntilDue: f.daysUntilDue,
+          }))
+          const slackOverdue = digestOverdue.map((f) => ({
+            type: f.type, state: f.state, due_date: f.due_date,
+            companyName: f.companyName, daysOverdue: f.daysOverdue,
+          }))
+          await sendSlackMessage(
+            pref.slack_webhook_url,
+            "Weekly compliance digest",
+            buildDigestBlocks(slackUpcoming, slackOverdue)
+          )
         }
         // Fire digest webhook
         await fireWebhooks(supabase, pref.user_id, "digest.weekly", {

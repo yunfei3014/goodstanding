@@ -38,7 +38,7 @@ type EmailPrefs = {
 
 type SlackPrefs = {
   connected: boolean
-  workspace: string
+  webhookUrl: string
   channel: string
   overdueAlerts: boolean
   upcomingAlerts: boolean
@@ -65,7 +65,7 @@ const DEFAULT_PREFS: IntegrationPrefs = {
   },
   slack: {
     connected: false,
-    workspace: "",
+    webhookUrl: "",
     channel: "#compliance",
     overdueAlerts: true,
     upcomingAlerts: true,
@@ -222,44 +222,76 @@ function SlackPanel({
   prefs: SlackPrefs
   onChange: (p: SlackPrefs) => void
 }) {
-  const [connecting, setConnecting] = useState(false)
+  const [inputUrl, setInputUrl] = useState("")
+  const [error, setError] = useState("")
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<"ok" | "fail" | null>(null)
 
-  async function handleConnect() {
-    setConnecting(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    onChange({
-      ...prefs,
-      connected: true,
-      workspace: "My Workspace",
-      channel: "#compliance",
-    })
-    setConnecting(false)
+  function handleConnect() {
+    setError("")
+    const trimmed = inputUrl.trim()
+    if (!trimmed.startsWith("https://hooks.slack.com/")) {
+      setError("Must be a Slack Incoming Webhook URL starting with https://hooks.slack.com/")
+      return
+    }
+    onChange({ ...prefs, connected: true, webhookUrl: trimmed })
+    setInputUrl("")
   }
 
   function handleDisconnect() {
-    onChange({ ...DEFAULT_PREFS.slack, connected: false })
+    onChange({ ...DEFAULT_PREFS.slack })
+  }
+
+  async function handleTest() {
+    if (!prefs.webhookUrl) return
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const res = await fetch("/api/slack-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl: prefs.webhookUrl }),
+      })
+      setTestResult(res.ok ? "ok" : "fail")
+    } catch {
+      setTestResult("fail")
+    }
+    setTesting(false)
   }
 
   if (!prefs.connected) {
     return (
-      <div className="pt-2 text-center py-6">
-        <div className="w-12 h-12 bg-[#4A154B]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Slack className="w-6 h-6 text-[#4A154B]" />
+      <div className="space-y-5 pt-2">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 space-y-2">
+          <p className="font-semibold text-slate-800">How to get your Slack webhook URL:</p>
+          <ol className="list-decimal list-inside space-y-1 text-xs text-slate-600">
+            <li>Go to <span className="font-mono bg-white border border-slate-200 px-1 rounded">api.slack.com/apps</span> and open or create an app</li>
+            <li>Under <strong>Features</strong>, select <strong>Incoming Webhooks</strong></li>
+            <li>Activate incoming webhooks and click <strong>Add New Webhook to Workspace</strong></li>
+            <li>Choose a channel and click <strong>Allow</strong></li>
+            <li>Copy the webhook URL and paste it below</li>
+          </ol>
         </div>
-        <p className="text-sm text-slate-600 mb-1 font-medium">Connect your Slack workspace</p>
-        <p className="text-xs text-slate-400 mb-5">
-          Get compliance alerts and deadline reminders in any channel.
-        </p>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            Incoming Webhook URL
+          </label>
+          <input
+            type="url"
+            value={inputUrl}
+            onChange={(e) => { setInputUrl(e.target.value); setError("") }}
+            onKeyDown={(e) => e.key === "Enter" && handleConnect()}
+            placeholder="https://hooks.slack.com/services/T.../B.../..."
+            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+          />
+          {error && <p className="text-xs text-red-600 mt-1.5 font-medium">{error}</p>}
+        </div>
         <button
           onClick={handleConnect}
-          disabled={connecting}
-          className="inline-flex items-center gap-2 bg-[#4A154B] hover:bg-[#3d1040] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-70"
+          className="inline-flex items-center gap-2 bg-[#4A154B] hover:bg-[#3d1040] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
         >
-          {connecting ? (
-            <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Connecting...</>
-          ) : (
-            <><Slack className="w-4 h-4" />Connect Slack</>
-          )}
+          <Slack className="w-4 h-4" />
+          Connect Slack
         </button>
       </div>
     )
@@ -267,41 +299,48 @@ function SlackPanel({
 
   return (
     <div className="space-y-5 pt-2">
-      {/* Connected workspace */}
+      {/* Connected indicator */}
       <div className="flex items-center gap-3 bg-[#4A154B]/5 border border-[#4A154B]/20 rounded-xl px-4 py-3">
         <Slack className="w-4 h-4 text-[#4A154B] flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-slate-800">{prefs.workspace}</p>
-          <p className="text-xs text-slate-400">Slack workspace · {prefs.channel}</p>
+          <p className="text-sm font-semibold text-slate-800">Slack connected</p>
+          <p className="text-xs text-slate-400 font-mono truncate">
+            {prefs.webhookUrl.replace(/\/[^/]+$/, "/••••••")}
+          </p>
         </div>
-        <button
-          onClick={handleDisconnect}
-          className="text-xs text-red-500 hover:text-red-700 font-semibold transition-colors"
-        >
-          Disconnect
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleTest}
+            disabled={testing}
+            className="text-xs text-slate-500 hover:text-slate-800 font-semibold transition-colors"
+          >
+            {testing ? "Sending..." : "Test"}
+          </button>
+          <button
+            onClick={handleDisconnect}
+            className="text-xs text-red-500 hover:text-red-700 font-semibold transition-colors"
+          >
+            Disconnect
+          </button>
+        </div>
       </div>
-
-      {/* Channel */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-          Alert channel
-        </label>
-        <input
-          type="text"
-          value={prefs.channel}
-          onChange={(e) => onChange({ ...prefs, channel: e.target.value })}
-          placeholder="#compliance"
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
-      </div>
+      {testResult === "ok" && (
+        <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+          <Check className="w-3.5 h-3.5" />Test message sent to Slack
+        </p>
+      )}
+      {testResult === "fail" && (
+        <p className="text-xs text-red-600 font-medium flex items-center gap-1">
+          <X className="w-3.5 h-3.5" />Test failed — check the webhook URL
+        </p>
+      )}
 
       {/* Alert types */}
       <div className="space-y-3">
         {[
           { key: "overdueAlerts" as const, label: "Overdue alerts", description: "Post immediately when a filing goes overdue" },
-          { key: "upcomingAlerts" as const, label: "Upcoming deadlines", description: "Post when deadlines are 7 days away" },
-          { key: "weeklyDigest" as const, label: "Weekly digest", description: "Monday summary of all upcoming filings" },
+          { key: "upcomingAlerts" as const, label: "Upcoming deadlines", description: "Post when deadlines are within your reminder window" },
+          { key: "weeklyDigest" as const, label: "Weekly digest", description: "Monday summary of upcoming and overdue filings" },
         ].map(({ key, label, description }) => (
           <div key={key} className="flex items-start justify-between gap-4">
             <div>
@@ -979,7 +1018,14 @@ export default function IntegrationsPage() {
             overdueAlerts: dbPrefs.email_overdue_alerts,
             weeklyDigest: dbPrefs.email_weekly_digest,
           },
-          slack: DEFAULT_PREFS.slack,
+          slack: {
+            connected: !!dbPrefs.slack_webhook_url,
+            webhookUrl: dbPrefs.slack_webhook_url ?? "",
+            channel: "#compliance",
+            overdueAlerts: dbPrefs.slack_overdue_alerts ?? true,
+            upcomingAlerts: dbPrefs.slack_upcoming_alerts ?? true,
+            weeklyDigest: dbPrefs.slack_weekly_digest ?? false,
+          },
           ical: {
             generated: !!dbPrefs.ical_token,
             token: dbPrefs.ical_token ?? "",
@@ -1013,6 +1059,10 @@ export default function IntegrationsPage() {
       email_overdue_alerts: next.email.overdueAlerts,
       email_weekly_digest: next.email.weeklyDigest,
       ical_token: next.ical.token || null,
+      slack_webhook_url: next.slack.webhookUrl || null,
+      slack_overdue_alerts: next.slack.overdueAlerts,
+      slack_upcoming_alerts: next.slack.upcomingAlerts,
+      slack_weekly_digest: next.slack.weeklyDigest,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" })
   }
