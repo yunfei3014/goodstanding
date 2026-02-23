@@ -75,8 +75,25 @@ export default function DashboardPage() {
         supabase.from("government_interactions").select("*").order("created_at", { ascending: false }),
       ])
 
-      setCompanies(companiesData ?? [])
-      setFilings(filingsData ?? [])
+      const companies = companiesData ?? []
+      const filings = filingsData ?? []
+
+      // Auto-sync company status based on filing health
+      for (const company of companies) {
+        const companyFilings = filings.filter((f) => f.company_id === company.id)
+        const overdueCount = companyFilings.filter((f) => f.status === "overdue").length
+        const newStatus: Company["status"] =
+          overdueCount >= 3 ? "action_required"
+          : overdueCount >= 1 ? "attention_needed"
+          : "good_standing"
+        if (newStatus !== company.status) {
+          company.status = newStatus
+          await supabase.from("companies").update({ status: newStatus }).eq("id", company.id)
+        }
+      }
+
+      setCompanies(companies)
+      setFilings(filings)
       setInteractions(interactionsData ?? [])
       setLoading(false)
     }

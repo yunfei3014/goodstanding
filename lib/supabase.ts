@@ -53,6 +53,8 @@ export type GovernmentInteraction = {
   type: string
   status: "resolved" | "in_progress" | "scheduled"
   summary: string
+  ea_name?: string
+  call_duration_minutes?: number
   created_at: string
   resolved_at?: string
 }
