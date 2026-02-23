@@ -11,8 +11,9 @@ const footerLinks = {
   Company: [
     { label: "About", href: "/about" },
     { label: "Pricing", href: "/pricing" },
+    { label: "Demo", href: "/demo" },
+    { label: "Changelog", href: "/changelog" },
     { label: "Resources", href: "/resources" },
-    { label: "International Founders", href: "/international" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy" },
