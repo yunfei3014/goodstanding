@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Navbar from "@/components/marketing/Navbar"
 import Footer from "@/components/marketing/Footer"
@@ -156,9 +157,69 @@ const competitors = [
   { name: "ZenBusiness", issue: "800K customers. No IRS calls." },
 ]
 
+export const metadata: Metadata = {
+  title: "GoodStanding.ai — Your Startup's Co-Compliance Partner",
+  description:
+    "Form your company, stay compliant, and handle government calls — automated. Enrolled Agent licensed. No missed deadlines, no IRS surprises.",
+  openGraph: {
+    title: "GoodStanding.ai — Your Startup's Co-Compliance Partner",
+    description: "Startup compliance on autopilot. Formation, registered agent, and Enrolled Agent government liaison.",
+    url: "https://goodstanding.ai",
+    siteName: "GoodStanding.ai",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
+}
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://goodstanding.ai/#organization",
+      name: "GoodStanding.ai",
+      url: "https://goodstanding.ai",
+      description:
+        "Business compliance software for startups. Enrolled Agent-licensed formation, registered agent, compliance monitoring, and IRS/state government liaison services.",
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "customer support",
+        email: "hello@goodstanding.ai",
+        url: "https://goodstanding.ai/contact",
+      },
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: "GoodStanding.ai",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: "https://goodstanding.ai",
+      description:
+        "Startup compliance management platform. Entity formation, compliance monitoring, annual report filing, and IRS/state government liaison by Enrolled Agents.",
+      offers: [
+        { "@type": "Offer", name: "Launch", price: "0", priceCurrency: "USD" },
+        { "@type": "Offer", name: "Essentials", price: "99", priceCurrency: "USD" },
+        { "@type": "Offer", name: "Growth", price: "249", priceCurrency: "USD" },
+        { "@type": "Offer", name: "Scale", price: "499", priceCurrency: "USD" },
+      ],
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://goodstanding.ai/#website",
+      url: "https://goodstanding.ai",
+      name: "GoodStanding.ai",
+      publisher: { "@id": "https://goodstanding.ai/#organization" },
+    },
+  ],
+}
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar />
 
       {/* Hero */}

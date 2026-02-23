@@ -7,6 +7,7 @@ import {
   type UpcomingFiling,
   type OverdueFiling,
 } from "@/lib/email"
+import { fireWebhooks } from "@/lib/webhook"
 
 /**
  * GET /api/cron/send-reminders
@@ -125,6 +126,18 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         console.error(`Failed to send reminder to ${toEmail}:`, err)
       }
+      // Fire webhooks for upcoming filings
+      for (const f of upcomingToSend) {
+        await fireWebhooks(supabase, pref.user_id, "filing.upcoming", {
+          filingId: f.id,
+          type: f.type,
+          state: f.state,
+          dueDate: f.due_date,
+          daysUntilDue: f.daysUntilDue,
+          companyName: f.companyName,
+          amount: f.amount ?? null,
+        })
+      }
     }
 
     // Overdue alerts (only send on the day they become overdue, i.e. daysOverdue === 0)
@@ -154,6 +167,18 @@ export async function GET(req: NextRequest) {
           emailsSent++
         } catch (err) {
           console.error(`Failed to send overdue alert to ${toEmail}:`, err)
+        }
+        // Fire webhooks for overdue filings
+        for (const f of overdueToday) {
+          await fireWebhooks(supabase, pref.user_id, "filing.overdue", {
+            filingId: f.id,
+            type: f.type,
+            state: f.state,
+            dueDate: f.due_date,
+            daysOverdue: f.daysOverdue,
+            companyName: f.companyName,
+            amount: f.amount ?? null,
+          })
         }
       }
     }
@@ -203,6 +228,19 @@ export async function GET(req: NextRequest) {
         } catch (err) {
           console.error(`Failed to send weekly digest to ${toEmail}:`, err)
         }
+        // Fire digest webhook
+        await fireWebhooks(supabase, pref.user_id, "digest.weekly", {
+          upcomingCount: digestUpcoming.length,
+          overdueCount: digestOverdue.length,
+          upcoming: digestUpcoming.map((f) => ({
+            filingId: f.id, type: f.type, state: f.state,
+            dueDate: f.due_date, daysUntilDue: f.daysUntilDue, companyName: f.companyName,
+          })),
+          overdue: digestOverdue.map((f) => ({
+            filingId: f.id, type: f.type, state: f.state,
+            dueDate: f.due_date, daysOverdue: f.daysOverdue, companyName: f.companyName,
+          })),
+        })
       }
     }
   }

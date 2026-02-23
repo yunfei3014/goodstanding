@@ -19,6 +19,11 @@ import {
   AlertCircle,
   Bell,
   Clock,
+  Plus,
+  Trash2,
+  Code2,
+  Eye,
+  EyeOff,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -429,6 +434,259 @@ function IcalPanel({
   )
 }
 
+// ─── Webhook panel ────────────────────────────────────────────────────────────
+
+type WebhookRecord = {
+  id: string
+  url: string
+  events: string[]
+  enabled: boolean
+  created_at: string
+  secret?: string
+}
+
+const ALL_EVENTS = [
+  { value: "filing.overdue",  label: "Filing overdue",   description: "Fires when a filing status changes to overdue" },
+  { value: "filing.upcoming", label: "Filing upcoming",  description: "Fires when a filing is due within your reminder window" },
+  { value: "digest.weekly",   label: "Weekly digest",    description: "Fires every Monday with a summary of upcoming filings" },
+]
+
+function WebhookPanel() {
+  const [webhooks, setWebhooks] = useState<WebhookRecord[]>([])
+  const [loading, setLoading] = useState(true)
+  const [adding, setAdding] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [newUrl, setNewUrl] = useState("")
+  const [newEvents, setNewEvents] = useState<string[]>(["filing.overdue", "filing.upcoming", "digest.weekly"])
+  const [revealedSecrets, setRevealedSecrets] = useState<Set<string>>(new Set())
+  const [secrets, setSecrets] = useState<Record<string, string>>({})
+  const [error, setError] = useState("")
+
+  useEffect(() => { loadWebhooks() }, [])
+
+  async function loadWebhooks() {
+    const res = await fetch("/api/webhooks")
+    if (res.ok) {
+      const { webhooks: data } = await res.json()
+      setWebhooks(data)
+    }
+    setLoading(false)
+  }
+
+  async function handleAdd() {
+    setError("")
+    if (!newUrl) { setError("Enter a URL"); return }
+    setSaving(true)
+    const res = await fetch("/api/webhooks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: newUrl, events: newEvents }),
+    })
+    setSaving(false)
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setError(d.error ?? "Failed to save webhook")
+      return
+    }
+    const { webhook } = await res.json()
+    setWebhooks((prev) => [...prev, webhook])
+    setSecrets((prev) => ({ ...prev, [webhook.id]: webhook.secret ?? "" }))
+    setRevealedSecrets((prev) => new Set(prev).add(webhook.id))
+    setNewUrl("")
+    setNewEvents(["filing.overdue", "filing.upcoming", "digest.weekly"])
+    setAdding(false)
+  }
+
+  async function handleToggle(wh: WebhookRecord) {
+    await fetch("/api/webhooks", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: wh.id, enabled: !wh.enabled }),
+    })
+    setWebhooks((prev) => prev.map((w) => w.id === wh.id ? { ...w, enabled: !w.enabled } : w))
+  }
+
+  async function handleDelete(id: string) {
+    await fetch(`/api/webhooks?id=${id}`, { method: "DELETE" })
+    setWebhooks((prev) => prev.filter((w) => w.id !== id))
+  }
+
+  function toggleEventFilter(value: string) {
+    setNewEvents((prev) =>
+      prev.includes(value) ? prev.filter((e) => e !== value) : [...prev, value]
+    )
+  }
+
+  if (loading) {
+    return <div className="pt-4 text-xs text-slate-400">Loading...</div>
+  }
+
+  return (
+    <div className="space-y-5 pt-2">
+      <p className="text-sm text-slate-600">
+        GoodStanding will POST a signed JSON payload to your URL whenever compliance events occur.
+        Use this to trigger alerts in custom systems, update your CRM, or build automations.
+      </p>
+
+      {/* Existing webhooks */}
+      {webhooks.length > 0 && (
+        <div className="space-y-3">
+          {webhooks.map((wh) => {
+            const revealed = revealedSecrets.has(wh.id)
+            const secret = secrets[wh.id] ?? wh.secret ?? ""
+            return (
+              <div key={wh.id} className="border border-slate-200 rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-slate-50">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full flex-shrink-0",
+                    wh.enabled ? "bg-emerald-400" : "bg-slate-300"
+                  )} />
+                  <span className="text-xs font-mono text-slate-700 flex-1 truncate">{wh.url}</span>
+                  <Toggle enabled={wh.enabled} onToggle={() => handleToggle(wh)} />
+                  <button
+                    onClick={() => handleDelete(wh.id)}
+                    className="text-slate-300 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="px-4 py-3 space-y-2">
+                  <div className="flex flex-wrap gap-1">
+                    {wh.events.map((ev) => (
+                      <span key={ev} className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded">
+                        {ev}
+                      </span>
+                    ))}
+                  </div>
+                  {secret && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 font-medium">Signing secret:</span>
+                      <code className="text-xs font-mono text-slate-700 flex-1 truncate">
+                        {revealed ? secret : "••••••••••••••••••••"}
+                      </code>
+                      <button
+                        onClick={() => setRevealedSecrets((prev) => {
+                          const next = new Set(prev)
+                          if (revealed) next.delete(wh.id); else next.add(wh.id)
+                          return next
+                        })}
+                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        {revealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(secret).catch(() => {}) }}
+                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Add form */}
+      {adding ? (
+        <div className="border border-slate-200 rounded-xl p-4 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+              Endpoint URL (HTTPS required)
+            </label>
+            <input
+              type="url"
+              value={newUrl}
+              onChange={(e) => setNewUrl(e.target.value)}
+              placeholder="https://your-app.com/webhooks/goodstanding"
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+              Events to subscribe
+            </label>
+            <div className="space-y-2">
+              {ALL_EVENTS.map(({ value, label, description }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => toggleEventFilter(value)}
+                  className={cn(
+                    "w-full flex items-start gap-3 px-3 py-2.5 rounded-xl border-2 text-left transition-all",
+                    newEvents.includes(value)
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "border-slate-200 hover:border-slate-300"
+                  )}
+                >
+                  <div className={cn(
+                    "w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                    newEvents.includes(value) ? "bg-emerald-500 border-emerald-500" : "border-slate-300"
+                  )}>
+                    {newEvents.includes(value) && <Check className="w-2.5 h-2.5 text-white" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{label}</p>
+                    <p className="text-xs text-slate-400">{description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              onClick={handleAdd}
+              disabled={saving}
+              className="flex items-center gap-2 bg-[#1B2B4B] hover:bg-[#243461] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-70"
+            >
+              {saving ? (
+                <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</>
+              ) : (
+                "Add webhook"
+              )}
+            </button>
+            <button
+              onClick={() => { setAdding(false); setError(""); setNewUrl("") }}
+              className="text-sm text-slate-500 hover:text-slate-700 px-4 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : webhooks.length < 5 ? (
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 rounded-xl transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add endpoint
+        </button>
+      ) : (
+        <p className="text-xs text-slate-400">Maximum of 5 endpoints reached.</p>
+      )}
+
+      {/* Payload example */}
+      <div className="bg-slate-900 rounded-xl p-4">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Example payload</p>
+        <pre className="text-xs text-emerald-400 overflow-x-auto leading-relaxed">{`{
+  "event": "filing.overdue",
+  "timestamp": "2026-03-01T08:00:00.000Z",
+  "data": {
+    "filingId": "uuid",
+    "type": "Delaware Franchise Tax",
+    "state": "DE",
+    "dueDate": "2026-03-01",
+    "companyName": "Acme Corp"
+  }
+}`}</pre>
+      </div>
+    </div>
+  )
+}
+
 // ─── Integration card ──────────────────────────────────────────────────────────
 
 function IntegrationCard({
@@ -683,6 +941,25 @@ export default function IntegrationsPage() {
               userId={userId}
               onChange={(ical) => save({ ...prefs, ical })}
             />
+          </IntegrationCard>
+        </div>
+      </div>
+
+      {/* Developer / Webhooks section */}
+      <div className="mb-8">
+        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
+          Developer
+        </h2>
+        <div className="space-y-3">
+          <IntegrationCard
+            icon={Code2}
+            iconBg="bg-slate-100"
+            iconColor="text-slate-600"
+            name="Outgoing Webhooks"
+            description="POST real-time compliance events to any HTTPS endpoint. HMAC-SHA256 signed."
+            connected={false}
+          >
+            <WebhookPanel />
           </IntegrationCard>
         </div>
       </div>

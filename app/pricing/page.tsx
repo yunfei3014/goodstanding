@@ -142,9 +142,70 @@ const faqs = [
   },
 ]
 
+const pricingJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "GoodStanding.ai",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: "https://goodstanding.ai",
+  offers: [
+    {
+      "@type": "Offer",
+      name: "Launch",
+      price: "0",
+      priceCurrency: "USD",
+      description: "Free entity formation, EIN application, and operating agreement.",
+    },
+    {
+      "@type": "Offer",
+      name: "Essentials",
+      price: "99",
+      priceCurrency: "USD",
+      description: "Registered agent, compliance monitoring, and annual report filing.",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "99",
+        priceCurrency: "USD",
+        referenceQuantity: { "@type": "QuantitativeValue", unitCode: "MON" },
+      },
+    },
+    {
+      "@type": "Offer",
+      name: "Growth",
+      price: "249",
+      priceCurrency: "USD",
+      description: "Multi-state registered agent, government liaison calls, and fundraise-readiness check.",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "249",
+        priceCurrency: "USD",
+        referenceQuantity: { "@type": "QuantitativeValue", unitCode: "MON" },
+      },
+    },
+    {
+      "@type": "Offer",
+      name: "Scale",
+      price: "499",
+      priceCurrency: "USD",
+      description: "Unlimited government liaison calls, dedicated compliance lead, and quarterly compliance review.",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "499",
+        priceCurrency: "USD",
+        referenceQuantity: { "@type": "QuantitativeValue", unitCode: "MON" },
+      },
+    },
+  ],
+}
+
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingJsonLd) }}
+      />
       <Navbar />
 
       <div className="pt-24 pb-20 px-4 sm:px-6">
