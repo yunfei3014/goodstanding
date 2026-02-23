@@ -326,7 +326,9 @@ export default function DashboardPage() {
                         <Building2 className="w-5 h-5 text-emerald-400" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900">{company.name}</h3>
+                        <Link href={`/dashboard/companies/${company.id}`} className="hover:underline decoration-slate-300">
+                          <h3 className="font-bold text-slate-900">{company.name}</h3>
+                        </Link>
                         <p className="text-slate-400 text-sm">
                           {company.entity_type === "c_corp"
                             ? "C-Corporation"
