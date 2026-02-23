@@ -16,9 +16,35 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 }
 
+const aboutJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  name: "About GoodStanding.ai",
+  url: "https://goodstanding.ai/about",
+  description: "GoodStanding.ai is a business compliance platform for startups. We handle entity formation, compliance monitoring, and government liaison — backed by Enrolled Agent credentials.",
+  mainEntity: {
+    "@type": "Organization",
+    "@id": "https://goodstanding.ai/#organization",
+    name: "GoodStanding.ai",
+    url: "https://goodstanding.ai",
+    foundingDate: "2025",
+    description: "Startup compliance platform. Enrolled Agent-licensed team handling formation, compliance monitoring, and IRS/state government liaison.",
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: "hello@goodstanding.ai",
+      url: "https://goodstanding.ai/contact",
+    },
+  },
+}
+
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
+      />
       <Navbar />
 
       <div className="pt-24 pb-20 px-4 sm:px-6">

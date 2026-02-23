@@ -107,9 +107,68 @@ const services = [
   },
 ]
 
+const servicesJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "GoodStanding.ai Services",
+  description: "Business compliance services for startups: formation, registered agent, compliance monitoring, and government liaison.",
+  url: "https://goodstanding.ai/services",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      item: {
+        "@type": "Service",
+        name: "Entity Formation",
+        description: "LLC, C-Corp, or S-Corp formation in all 50 states. AI-guided entity selection, EIN application, operating agreement, and compliance dashboard.",
+        provider: { "@type": "Organization", name: "GoodStanding.ai" },
+        areaServed: "US",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Free (plus state filing fees)" },
+      },
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      item: {
+        "@type": "Service",
+        name: "Registered Agent",
+        description: "Registered agent service in all 50 states. Official address for legal documents, forwarding and digital delivery.",
+        provider: { "@type": "Organization", name: "GoodStanding.ai" },
+        areaServed: "US",
+      },
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      item: {
+        "@type": "Service",
+        name: "Compliance Monitoring",
+        description: "Annual report tracking and filing, franchise tax reminders, BOI/FinCEN reporting, and foreign qualification support.",
+        provider: { "@type": "Organization", name: "GoodStanding.ai" },
+        areaServed: "US",
+      },
+    },
+    {
+      "@type": "ListItem",
+      position: 4,
+      item: {
+        "@type": "Service",
+        name: "Government Liaison",
+        description: "Enrolled Agent-licensed representation before the IRS and state agencies. We make the calls and handle notices on your behalf.",
+        provider: { "@type": "Organization", name: "GoodStanding.ai" },
+        areaServed: "US",
+      },
+    },
+  ],
+}
+
 export default function ServicesPage() {
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(servicesJsonLd) }}
+      />
       <Navbar />
 
       <div className="pt-24 pb-20 px-4 sm:px-6">
