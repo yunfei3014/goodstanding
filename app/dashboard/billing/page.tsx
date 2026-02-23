@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase"
 import type { Company } from "@/lib/supabase"
 import {
@@ -177,6 +178,10 @@ function UsageMeter({
 }
 
 export default function BillingPage() {
+  const searchParams = useSearchParams()
+  const stripeSuccess = searchParams.get("success") === "1"
+  const stripeCanceled = searchParams.get("canceled") === "1"
+
   const [companies, setCompanies] = useState<Company[]>([])
   const [filingCount, setFilingCount] = useState(0)
   const [docCount, setDocCount] = useState(0)
@@ -256,6 +261,24 @@ export default function BillingPage() {
         <h1 className="text-2xl font-bold text-slate-900 mb-1">Billing & Plan</h1>
         <p className="text-slate-500">Manage your subscription and view usage.</p>
       </div>
+
+      {/* Stripe redirect banners */}
+      {stripeSuccess && (
+        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-6">
+          <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <p className="text-sm font-medium text-emerald-800">
+            Subscription activated! Your plan has been upgraded.
+          </p>
+        </div>
+      )}
+      {stripeCanceled && (
+        <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
+          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+          <p className="text-sm font-medium text-amber-800">
+            Checkout was canceled — no charge was made.
+          </p>
+        </div>
+      )}
 
       {/* Current plan banner */}
       <div className="bg-[#0F1829] rounded-2xl p-6 mb-8 flex items-center justify-between gap-6 flex-wrap">
