@@ -7,7 +7,17 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase"
 import type { Company } from "@/lib/supabase"
-import { Shield, Bell, Building2, Users, KeyRound, CheckCircle2, Link } from "lucide-react"
+import {
+  Shield,
+  Bell,
+  Building2,
+  Users,
+  KeyRound,
+  CheckCircle2,
+  Pencil,
+  X,
+  Loader2,
+} from "lucide-react"
 
 const PLAN_LABELS: Record<string, { label: string; price: string; features: string }> = {
   launch:     { label: "Launch",     price: "$49/mo",  features: "Registered agent (1 state) · Annual report filing" },
@@ -19,6 +29,19 @@ const PLAN_LABELS: Record<string, { label: string; price: string; features: stri
 const NEXT_PLAN: Record<string, string> = {
   launch: "essentials", essentials: "growth", growth: "scale",
 }
+
+const US_STATES = [
+  ["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],
+  ["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],
+  ["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],
+  ["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],
+  ["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],
+  ["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],
+  ["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],
+  ["OK","Oklahoma"],["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],
+  ["SD","South Dakota"],["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],
+  ["VA","Virginia"],["WA","Washington"],["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"],
+]
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
   return (
@@ -37,10 +60,181 @@ function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void 
   )
 }
 
+function EditCompanyModal({
+  company,
+  onClose,
+  onSaved,
+}: {
+  company: Company
+  onClose: () => void
+  onSaved: (updated: Company) => void
+}) {
+  const [name, setName] = useState(company.name)
+  const [ein, setEin] = useState(company.ein ?? "")
+  const [entityType, setEntityType] = useState(company.entity_type)
+  const [state, setState] = useState(company.state_of_incorporation)
+  const [formedAt, setFormedAt] = useState(company.formed_at ?? "")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  // Format EIN as XX-XXXXXXX on blur
+  function formatEin(raw: string): string {
+    const digits = raw.replace(/\D/g, "").slice(0, 9)
+    if (digits.length <= 2) return digits
+    return `${digits.slice(0, 2)}-${digits.slice(2)}`
+  }
+
+  async function handleSave() {
+    if (!name.trim()) return
+    setSaving(true)
+    setError("")
+    const supabase = createClient()
+    const updates: Partial<Company> = {
+      name: name.trim(),
+      entity_type: entityType,
+      state_of_incorporation: state,
+    }
+    if (ein) updates.ein = ein
+    if (formedAt) updates.formed_at = formedAt
+
+    const { data, error: err } = await supabase
+      .from("companies")
+      .update(updates)
+      .eq("id", company.id)
+      .select()
+      .single()
+
+    setSaving(false)
+    if (err) {
+      setError(err.message)
+    } else {
+      onSaved(data as Company)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-[#1B2B4B]">Edit company</h2>
+            <p className="text-slate-500 text-sm mt-0.5">Update entity details and tax information</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Company name */}
+          <div>
+            <Label htmlFor="cName">Company name</Label>
+            <Input
+              id="cName"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1.5"
+            />
+          </div>
+
+          {/* EIN */}
+          <div>
+            <Label htmlFor="ein">
+              EIN <span className="text-slate-400 font-normal">(Employer Identification Number)</span>
+            </Label>
+            <Input
+              id="ein"
+              value={ein}
+              onChange={(e) => setEin(e.target.value)}
+              onBlur={(e) => setEin(formatEin(e.target.value))}
+              placeholder="XX-XXXXXXX"
+              className="mt-1.5 font-mono"
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Required for tax filings. Format: 12-3456789
+            </p>
+          </div>
+
+          {/* Entity type */}
+          <div>
+            <Label className="mb-2 block">Entity type</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {(["llc", "c_corp", "s_corp"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setEntityType(t)}
+                  className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${
+                    entityType === t
+                      ? "border-[#1B2B4B] bg-[#1B2B4B]/5 font-semibold text-[#1B2B4B]"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  {t === "llc" ? "LLC" : t === "c_corp" ? "C-Corp" : "S-Corp"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* State */}
+          <div>
+            <Label htmlFor="state">State of incorporation</Label>
+            <select
+              id="state"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              className="mt-1.5 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              {US_STATES.map(([abbr, label]) => (
+                <option key={abbr} value={abbr}>{abbr} — {label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Formation date */}
+          <div>
+            <Label htmlFor="formedAt">
+              Formation date <span className="text-slate-400 font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="formedAt"
+              type="date"
+              value={formedAt}
+              onChange={(e) => setFormedAt(e.target.value)}
+              className="mt-1.5"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button variant="outline" className="flex-1 border-slate-200" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            className="flex-1 bg-[#1B2B4B] hover:bg-[#243461] text-white"
+            disabled={!name.trim() || saving}
+            onClick={handleSave}
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
+            ) : (
+              <><CheckCircle2 className="w-4 h-4 mr-2" />Save changes</>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const [user, setUser] = useState<{ id: string; email: string; full_name: string } | null>(null)
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null)
 
   // Account form
   const [fullName, setFullName] = useState("")
@@ -56,11 +250,11 @@ export default function SettingsPage() {
 
   // Notifications
   const [notifications, setNotifications] = useState([
-    { key: "filing_reminders",  label: "Filing deadline reminders",      desc: "30 days, 7 days, and 1 day before",                           enabled: true },
-    { key: "gov_notices",       label: "Government notices received",     desc: "When new mail arrives at your registered agent",              enabled: true },
-    { key: "liaison_updates",   label: "Government liaison updates",      desc: "When your EA completes a call or resolves an issue",          enabled: true },
-    { key: "standing_alerts",   label: "Good standing alerts",            desc: "If any entity loses good standing",                           enabled: true },
-    { key: "monthly_summary",   label: "Monthly compliance summary",      desc: "Monthly digest of your compliance status",                    enabled: false },
+    { key: "filing_reminders",  label: "Filing deadline reminders",    desc: "30 days, 7 days, and 1 day before",                        enabled: true },
+    { key: "gov_notices",       label: "Government notices received",   desc: "When new mail arrives at your registered agent",           enabled: true },
+    { key: "liaison_updates",   label: "Government liaison updates",    desc: "When your EA completes a call or resolves an issue",       enabled: true },
+    { key: "standing_alerts",   label: "Good standing alerts",          desc: "If any entity loses good standing",                       enabled: true },
+    { key: "monthly_summary",   label: "Monthly compliance summary",    desc: "Monthly digest of your compliance status",                 enabled: false },
   ])
 
   useEffect(() => {
@@ -131,6 +325,17 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-3xl mx-auto">
+      {editingCompany && (
+        <EditCompanyModal
+          company={editingCompany}
+          onClose={() => setEditingCompany(null)}
+          onSaved={(updated) => {
+            setCompanies((prev) => prev.map((c) => c.id === updated.id ? updated : c))
+            setEditingCompany(null)
+          }}
+        />
+      )}
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-1">Settings</h1>
         <p className="text-slate-500">Manage your account, companies, and billing.</p>
@@ -245,8 +450,14 @@ export default function SettingsPage() {
               {passwordSaving ? "Updating..." : "Update password"}
             </Button>
             {passwordMsg && (
-              <span className={`text-sm flex items-center gap-1 ${passwordMsg.startsWith("Error") || passwordMsg.includes("don't") || passwordMsg.includes("least") ? "text-red-600" : "text-emerald-600"}`}>
-                {!passwordMsg.startsWith("Error") && !passwordMsg.includes("don't") && !passwordMsg.includes("least") && <CheckCircle2 className="w-3.5 h-3.5" />}
+              <span className={`text-sm flex items-center gap-1 ${
+                passwordMsg.startsWith("Error") || passwordMsg.includes("don't") || passwordMsg.includes("least")
+                  ? "text-red-600"
+                  : "text-emerald-600"
+              }`}>
+                {!passwordMsg.startsWith("Error") && !passwordMsg.includes("don't") && !passwordMsg.includes("least") && (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                )}
                 {passwordMsg}
               </span>
             )}
@@ -296,20 +507,49 @@ export default function SettingsPage() {
         {companies.length === 0 ? (
           <p className="text-sm text-slate-400 text-center py-4">No companies yet.</p>
         ) : (
-          <div className="space-y-1">
+          <div className="divide-y divide-slate-50">
             {companies.map((company) => (
-              <div key={company.id} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0">
-                <div>
-                  <p className="font-medium text-slate-900 text-sm">{company.name}</p>
-                  <p className="text-xs text-slate-400">
-                    {company.entity_type === "c_corp" ? "C-Corporation" : company.entity_type === "s_corp" ? "S-Corporation" : "LLC"}
-                    {" · "}{company.state_of_incorporation}
-                    {" · "}{PLAN_LABELS[company.plan]?.label ?? company.plan} plan
-                  </p>
+              <div key={company.id} className="flex items-center justify-between py-4">
+                <div className="flex-1 min-w-0 mr-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-slate-900 text-sm">{company.name}</p>
+                    <Badge variant={
+                      company.status === "good_standing" ? "green"
+                      : company.status === "attention_needed" ? "yellow"
+                      : "red"
+                    }>
+                      {company.status === "good_standing" ? "Good Standing"
+                        : company.status === "attention_needed" ? "Action Needed"
+                        : "Critical"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-3 flex-wrap mt-0.5">
+                    <p className="text-xs text-slate-400">
+                      {company.entity_type === "c_corp" ? "C-Corporation"
+                        : company.entity_type === "s_corp" ? "S-Corporation"
+                        : "LLC"}
+                      {" · "}{company.state_of_incorporation}
+                      {" · "}{PLAN_LABELS[company.plan]?.label ?? company.plan} plan
+                    </p>
+                    {company.ein && (
+                      <span className="text-xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                        EIN {company.ein}
+                      </span>
+                    )}
+                    {company.formed_at && (
+                      <span className="text-xs text-slate-400">
+                        Est. {new Date(company.formed_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <Badge variant={company.status === "good_standing" ? "green" : company.status === "attention_needed" ? "yellow" : "red"}>
-                  {company.status === "good_standing" ? "Good Standing" : company.status === "attention_needed" ? "Action Needed" : "Critical"}
-                </Badge>
+                <button
+                  onClick={() => setEditingCompany(company)}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-[#1B2B4B] hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition-colors flex-shrink-0"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Edit
+                </button>
               </div>
             ))}
           </div>
