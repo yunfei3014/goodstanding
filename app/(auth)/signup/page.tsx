@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -119,6 +120,7 @@ function SignupContent() {
 
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const [formData, setFormData] = useState<FormData>({
     companyName: "",
     entityType: "c_corp",
@@ -150,10 +152,54 @@ function SignupContent() {
 
   const handleSubmit = async () => {
     setLoading(true)
-    // Simulate account creation — Supabase auth will go here
-    await new Promise((r) => setTimeout(r, 1500))
+    setError("")
+    const supabase = createClient()
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          full_name: formData.founderName,
+          // Store company setup data in user metadata so we can create it after confirmation
+          pending_company: {
+            name: formData.companyName,
+            entity_type: formData.entityType,
+            state_of_incorporation: formData.state,
+            plan: formData.plan,
+          },
+        },
+      },
+    })
+
     setLoading(false)
-    router.push("/dashboard")
+
+    if (signUpError) {
+      setError(signUpError.message)
+      return
+    }
+
+    // If session exists immediately (email confirmation disabled), create company now
+    if (data.session) {
+      const { error: insertError } = await supabase.from("companies").insert({
+        user_id: data.user!.id,
+        name: formData.companyName,
+        entity_type: formData.entityType,
+        state_of_incorporation: formData.state,
+        plan: formData.plan,
+        status: "good_standing",
+      })
+      if (!insertError) {
+        // Clear pending_company from metadata
+        await supabase.auth.updateUser({ data: { pending_company: null } })
+      }
+      router.push("/dashboard")
+      router.refresh()
+    } else {
+      // Email confirmation required — send to check-email page
+      router.push(`/check-email?email=${encodeURIComponent(formData.email)}`)
+    }
   }
 
   return (
@@ -528,6 +574,12 @@ function SignupContent() {
                 </div>
               </div>
 
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 mt-4">
+                  {error}
+                </div>
+              )}
+
               <p className="text-xs text-slate-400 mt-4">
                 By creating an account you agree to our{" "}
                 <Link href="/terms" className="underline">Terms of Service</Link> and{" "}
@@ -543,6 +595,7 @@ function SignupContent() {
                 variant="outline"
                 onClick={() => setStep(step - 1)}
                 className="border-slate-200"
+                disabled={loading}
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back

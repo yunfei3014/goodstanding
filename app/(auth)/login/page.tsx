@@ -1,28 +1,37 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { createClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Shield, ArrowRight, Mail, Lock } from "lucide-react"
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState(searchParams.get("error") ? "Authentication failed. Please try again." : "")
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
-    // Supabase auth goes here
-    await new Promise((r) => setTimeout(r, 1000))
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    router.push("/dashboard")
+    if (error) {
+      setError(error.message === "Invalid login credentials"
+        ? "Incorrect email or password."
+        : error.message)
+    } else {
+      router.push("/dashboard")
+      router.refresh()
+    }
   }
 
   return (
@@ -114,5 +123,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>}>
+      <LoginContent />
+    </Suspense>
   )
 }

@@ -1,9 +1,15 @@
-import { createClient } from "@supabase/supabase-js"
+import { createBrowserClient } from "@supabase/ssr"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Browser client — use in "use client" components
+export function createClient() {
+  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+}
+
+// Singleton for backward compatibility
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 export type Company = {
   id: string

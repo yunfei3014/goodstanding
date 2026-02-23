@@ -1,8 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase"
+import type { Company } from "@/lib/supabase"
 import {
   Shield,
   LayoutDashboard,
@@ -28,11 +30,6 @@ const navItems = [
   { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ]
 
-const companies = [
-  { id: "comp-1", name: "Prism AI, Inc.", status: "good_standing" },
-  { id: "comp-2", name: "Beacon Health, LLC", status: "attention_needed" },
-]
-
 function StatusDot({ status }: { status: string }) {
   return (
     <div className={cn(
@@ -46,9 +43,79 @@ function StatusDot({ status }: { status: string }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const [selectedCompany, setSelectedCompany] = useState(companies[0])
+  const router = useRouter()
   const [companyMenuOpen, setCompanyMenuOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
+  const [user, setUser] = useState<{ email: string; full_name: string; plan: string } | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    async function loadData() {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        router.push("/login")
+        return
+      }
+
+      setUser({
+        email: authUser.email ?? "",
+        full_name: authUser.user_metadata?.full_name ?? authUser.email ?? "",
+        plan: "launch",
+      })
+
+      // Check for pending company setup (created during signup before email confirmation)
+      const pendingCompany = authUser.user_metadata?.pending_company
+      const { data: existingCompanies } = await supabase
+        .from("companies")
+        .select("*")
+        .order("created_at", { ascending: true })
+
+      if ((!existingCompanies || existingCompanies.length === 0) && pendingCompany) {
+        // First login after email confirmation — create the company now
+        const { data: newCompany } = await supabase
+          .from("companies")
+          .insert({
+            user_id: authUser.id,
+            name: pendingCompany.name,
+            entity_type: pendingCompany.entity_type,
+            state_of_incorporation: pendingCompany.state_of_incorporation,
+            plan: pendingCompany.plan,
+            status: "good_standing",
+          })
+          .select()
+          .single()
+
+        // Clear pending metadata
+        await supabase.auth.updateUser({ data: { pending_company: null } })
+
+        if (newCompany) {
+          setCompanies([newCompany])
+          setSelectedCompany(newCompany)
+          setUser(prev => prev ? { ...prev, plan: newCompany.plan } : prev)
+        }
+      } else if (existingCompanies && existingCompanies.length > 0) {
+        setCompanies(existingCompanies)
+        setSelectedCompany(existingCompanies[0])
+        setUser(prev => prev ? { ...prev, plan: existingCompanies[0].plan } : prev)
+      }
+    }
+
+    loadData()
+  }, [router])
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/login")
+    router.refresh()
+  }
+
+  const initials = user?.full_name
+    ? user.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "?"
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -77,7 +144,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Building2 className="w-3.5 h-3.5 text-emerald-400" />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <p className="text-white text-sm font-medium truncate">{selectedCompany.name}</p>
+              <p className="text-white text-sm font-medium truncate">
+                {selectedCompany?.name ?? "Loading..."}
+              </p>
               <p className="text-white/40 text-xs">Switch company</p>
             </div>
             <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform", companyMenuOpen && "rotate-180")} />
@@ -94,7 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   }}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 transition-colors",
-                    selectedCompany.id === company.id && "bg-white/5"
+                    selectedCompany?.id === company.id && "bg-white/5"
                   )}
                 >
                   <StatusDot status={company.status} />
@@ -105,6 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   href="/signup"
                   className="flex items-center gap-2 px-3 py-2.5 text-emerald-400 hover:bg-white/10 transition-colors"
+                  onClick={() => setCompanyMenuOpen(false)}
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span className="text-sm">Add company</span>
@@ -141,13 +211,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="px-3 pb-4 border-t border-white/10 pt-3">
           <div className="flex items-center gap-3 px-3 py-2.5">
             <div className="w-8 h-8 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400 font-bold text-sm flex-shrink-0">
-              F
+              {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">Fei M.</p>
-              <p className="text-white/40 text-xs">Growth plan</p>
+              <p className="text-white text-sm font-medium truncate">
+                {user?.full_name ?? "Loading..."}
+              </p>
+              <p className="text-white/40 text-xs capitalize">{user?.plan ?? "launch"} plan</p>
             </div>
-            <button className="text-white/40 hover:text-white/70">
+            <button
+              onClick={handleLogout}
+              className="text-white/40 hover:text-white/70 transition-colors"
+              title="Sign out"
+            >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
