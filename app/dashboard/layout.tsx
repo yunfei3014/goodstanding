@@ -8,6 +8,7 @@ import type { Company, Filing } from "@/lib/supabase"
 import { generateDefaultFilings } from "@/lib/filings"
 import { CompanyContext } from "@/lib/company-context"
 import { AddCompanyModal } from "@/components/dashboard/AddCompanyModal"
+import { SearchModal } from "@/components/dashboard/SearchModal"
 import {
   Shield,
   LayoutDashboard,
@@ -28,6 +29,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Activity,
+  Search,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -232,11 +234,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [addCompanyOpen, setAddCompanyOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [companies, setCompanies] = useState<Company[]>([])
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [filings, setFilings] = useState<Filing[]>([])
   const [user, setUser] = useState<{ email: string; full_name: string; plan: string } | null>(null)
   const notifRef = useRef<HTMLDivElement>(null)
+
+  // Cmd+K / Ctrl+K to open search
+  useEffect(() => {
+    function handleKeydown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        setSearchOpen((o) => !o)
+      }
+    }
+    document.addEventListener("keydown", handleKeydown)
+    return () => document.removeEventListener("keydown", handleKeydown)
+  }, [])
 
   // Listen for settings page "Add company" event
   useEffect(() => {
@@ -394,6 +409,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onAdded={handleCompanyAdded}
         />
       )}
+      {searchOpen && (
+        <SearchModal
+          companies={companies}
+          onClose={() => setSearchOpen(false)}
+        />
+      )}
       {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-[#0F1829] flex flex-col transition-transform duration-200 lg:static lg:translate-x-0",
@@ -530,6 +551,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
+            {/* Search */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="hidden sm:flex items-center gap-2 text-sm text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 pl-3 pr-2 py-1.5 rounded-lg transition-colors"
+            >
+              <Search className="w-4 h-4" />
+              <span className="text-xs">Search</span>
+              <kbd className="text-[10px] bg-white border border-slate-200 px-1.5 py-px rounded font-mono text-slate-400">
+                ⌘K
+              </kbd>
+            </button>
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="sm:hidden p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
             {/* Notification bell */}
             <div ref={notifRef} className="relative">
               <button
