@@ -67,7 +67,7 @@ export function ShareStatusModal({
   }
 
   const [token, setToken] = useState(() => encodeShareToken(shareData))
-  const shareUrl = `${typeof window !== "undefined" ? window.location.origin : "https://goodstanding.app"}/s/${token}`
+  const shareUrl = `${typeof window !== "undefined" ? window.location.origin : "https://goodstanding.ai"}/s/${token}`
 
   function handleCopy() {
     navigator.clipboard.writeText(shareUrl).catch(() => {})
