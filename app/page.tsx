@@ -213,12 +213,53 @@ const jsonLd = {
   ],
 }
 
+const homeFaqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is GoodStanding.ai?",
+      acceptedAnswer: { "@type": "Answer", text: "GoodStanding.ai is a startup compliance platform. We handle entity formation, registered agent services, compliance monitoring, and government liaison — including IRS and state agency calls made by Enrolled Agents on your behalf." },
+    },
+    {
+      "@type": "Question",
+      name: "What is an Enrolled Agent and why does it matter?",
+      acceptedAnswer: { "@type": "Answer", text: "An Enrolled Agent (EA) is a federally licensed tax professional authorized to represent taxpayers before the IRS. Unlike CPAs and attorneys, EAs specialize exclusively in tax. GoodStanding.ai uses EAs to make government calls, respond to IRS notices, and handle state agency matters — something most compliance platforms can't do." },
+    },
+    {
+      "@type": "Question",
+      name: "How much does GoodStanding.ai cost?",
+      acceptedAnswer: { "@type": "Answer", text: "GoodStanding.ai starts free (Launch plan) and includes entity formation at no charge beyond state filing fees. Paid plans start at $99/month for ongoing compliance monitoring and registered agent service. Growth ($249/mo) and Scale ($499/mo) plans include government liaison calls." },
+    },
+    {
+      "@type": "Question",
+      name: "Can international founders use GoodStanding.ai?",
+      acceptedAnswer: { "@type": "Answer", text: "Yes. International founders can form a US Delaware C-Corp or LLC through GoodStanding.ai without a US address, SSN, or visa. We provide a US registered agent address and guide you through obtaining an EIN as a non-resident using Form SS-4." },
+    },
+    {
+      "@type": "Question",
+      name: "What compliance deadlines does GoodStanding.ai track?",
+      acceptedAnswer: { "@type": "Answer", text: "GoodStanding.ai tracks Delaware franchise tax (due March 1), annual reports in all 50 states, foreign qualification renewals, BOI/FinCEN reports, federal tax deadlines, and state-specific compliance filings. You get email reminders and dashboard alerts for all upcoming deadlines." },
+    },
+    {
+      "@type": "Question",
+      name: "Is GoodStanding.ai a law firm?",
+      acceptedAnswer: { "@type": "Answer", text: "No. GoodStanding.ai is a software platform, not a law firm, and does not provide legal advice. Enrolled Agent services are limited to representation before the IRS as authorized under 31 C.F.R. Part 10." },
+    },
+  ],
+}
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeFaqJsonLd) }}
       />
       <Navbar />
 

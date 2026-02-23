@@ -78,9 +78,23 @@ const FAQS = [
   },
 ]
 
+const internationalFaqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map(({ q, a }) => ({
+    "@type": "Question",
+    name: q,
+    acceptedAnswer: { "@type": "Answer", text: a },
+  })),
+}
+
 export default function InternationalPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(internationalFaqJsonLd) }}
+      />
       <Navbar />
 
       <main className="flex-1 pt-16">

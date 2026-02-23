@@ -14,6 +14,7 @@ const footerLinks = {
     { label: "Demo", href: "/demo" },
     { label: "Changelog", href: "/changelog" },
     { label: "Resources", href: "/resources" },
+    { label: "FAQ", href: "/faq" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy" },
