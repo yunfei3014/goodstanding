@@ -711,6 +711,34 @@ export default async function ArticlePage({
   )
 }
 
+// Per-article metadata for SEO
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const article = articles[slug]
+  if (!article) return {}
+
+  return {
+    title: `${article.title} | GoodStanding.ai`,
+    description: article.description,
+    openGraph: {
+      title: article.title,
+      description: article.description,
+      url: `https://goodstanding.ai/resources/${slug}`,
+      type: "article",
+      siteName: "GoodStanding.ai",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.description,
+    },
+  }
+}
+
 // Generate static params for all article slugs
 export function generateStaticParams() {
   return Object.keys(articles).map((slug) => ({ slug }))
