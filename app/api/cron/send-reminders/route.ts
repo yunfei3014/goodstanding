@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import {
   sendDeadlineReminder,
   sendOverdueAlert,
+  sendWeeklyDigest,
   type UpcomingFiling,
   type OverdueFiling,
 } from "@/lib/email"
@@ -31,11 +32,13 @@ export async function GET(req: NextRequest) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
+  const isMonday = today.getDay() === 1
+
   // ── Load all users with email reminders enabled ──────────────────────────
 
   const { data: prefs } = await supabase
     .from("user_preferences")
-    .select("user_id, email_days, email_overdue_alerts")
+    .select("user_id, email_days, email_overdue_alerts, email_weekly_digest")
     .eq("email_enabled", true)
 
   if (!prefs?.length) {
@@ -151,6 +154,54 @@ export async function GET(req: NextRequest) {
           emailsSent++
         } catch (err) {
           console.error(`Failed to send overdue alert to ${toEmail}:`, err)
+        }
+      }
+    }
+
+    // Weekly digest — send every Monday if enabled
+    if (isMonday && pref.email_weekly_digest) {
+      // Skip if we already sent reminder/overdue for the same filings today
+      // (digest covers upcoming 30 days + all overdue)
+      const digestUpcoming: UpcomingFiling[] = []
+      for (const f of userFilings) {
+        if (f.status !== "pending" || !f.due_date) continue
+        const dueDate = new Date(f.due_date)
+        dueDate.setHours(0, 0, 0, 0)
+        const daysUntilDue = Math.round((dueDate.getTime() - today.getTime()) / 86_400_000)
+        if (daysUntilDue >= 0 && daysUntilDue <= 30) {
+          digestUpcoming.push({
+            id: f.id,
+            type: f.type,
+            state: f.state,
+            due_date: f.due_date,
+            amount: f.amount,
+            companyName: companyMap[f.company_id]?.name ?? "Your company",
+            daysUntilDue,
+          })
+        }
+      }
+      const digestOverdue: OverdueFiling[] = userFilings
+        .filter((f) => f.status === "overdue" && f.due_date)
+        .map((f) => {
+          const dueDate = new Date(f.due_date!)
+          dueDate.setHours(0, 0, 0, 0)
+          return {
+            id: f.id,
+            type: f.type,
+            state: f.state,
+            due_date: f.due_date!,
+            amount: f.amount,
+            companyName: companyMap[f.company_id]?.name ?? "Your company",
+            daysOverdue: Math.round((today.getTime() - dueDate.getTime()) / 86_400_000),
+          }
+        })
+
+      if (digestUpcoming.length > 0 || digestOverdue.length > 0) {
+        try {
+          await sendWeeklyDigest(toEmail, digestUpcoming, digestOverdue)
+          emailsSent++
+        } catch (err) {
+          console.error(`Failed to send weekly digest to ${toEmail}:`, err)
         }
       }
     }
