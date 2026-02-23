@@ -17,7 +17,29 @@ import {
   ArrowRight,
   X,
   Loader2,
+  Plus,
 } from "lucide-react"
+
+const SUGGESTED_TYPES = [
+  "BOI Report (FinCEN)",
+  "Quarterly Estimated Tax",
+  "State Sales Tax Return",
+  "Payroll Tax Deposit",
+  "1099-NEC Filing",
+  "W-2 Filing",
+  "Business License Renewal",
+  "Registered Agent Renewal",
+  "Foreign Qualification",
+]
+
+const US_STATES_AND_FEDERAL = [
+  "Federal",
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+  "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY",
+]
 
 function StatusBadge({ status }: { status: string }) {
   if (status === "completed") return <Badge variant="green">Filed ✓</Badge>
@@ -33,6 +55,237 @@ function StatusIcon({ status }: { status: string }) {
 }
 
 type FilingWithCompany = Filing & { company: Company | undefined }
+
+function AddFilingModal({
+  companies,
+  onClose,
+  onSuccess,
+}: {
+  companies: Company[]
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [companyId, setCompanyId] = useState(companies[0]?.id ?? "")
+  const [filingType, setFilingType] = useState("")
+  const [customType, setCustomType] = useState("")
+  const [jurisdiction, setJurisdiction] = useState("Federal")
+  const [dueDate, setDueDate] = useState("")
+  const [amount, setAmount] = useState("")
+  const [notes, setNotes] = useState("")
+  const [status, setStatus] = useState<"pending" | "completed" | "not_required">("pending")
+  const [filedAt, setFiledAt] = useState(new Date().toISOString().split("T")[0])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  const resolvedType = filingType === "Custom" ? customType : filingType
+  const canSubmit = companyId && resolvedType && dueDate
+
+  async function handleSave() {
+    if (!canSubmit) return
+    setSaving(true)
+    setError("")
+    const supabase = createClient()
+    const { error: err } = await supabase.from("filings").insert({
+      company_id: companyId,
+      type: resolvedType,
+      state: jurisdiction,
+      due_date: dueDate,
+      status,
+      ...(amount ? { amount: parseFloat(amount) } : {}),
+      ...(notes ? { notes } : {}),
+      ...(status === "completed" ? { filed_at: filedAt } : {}),
+    })
+    setSaving(false)
+    if (err) {
+      setError(err.message)
+    } else {
+      onSuccess()
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-[#1B2B4B]">Add filing</h2>
+            <p className="text-slate-500 text-sm mt-0.5">Track any compliance obligation or deadline</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-5">
+          {/* Company (only if multiple) */}
+          {companies.length > 1 && (
+            <div>
+              <Label className="mb-2 block">Company</Label>
+              <select
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                value={companyId}
+                onChange={(e) => setCompanyId(e.target.value)}
+              >
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Filing type */}
+          <div>
+            <Label className="mb-2 block">Filing type</Label>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              {SUGGESTED_TYPES.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setFilingType(t)}
+                  className={`px-3 py-2 rounded-lg border-2 text-xs text-left transition-all ${
+                    filingType === t
+                      ? "border-[#1B2B4B] bg-[#1B2B4B]/5 font-semibold text-[#1B2B4B]"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+              <button
+                onClick={() => setFilingType("Custom")}
+                className={`px-3 py-2 rounded-lg border-2 text-xs text-left transition-all ${
+                  filingType === "Custom"
+                    ? "border-[#1B2B4B] bg-[#1B2B4B]/5 font-semibold text-[#1B2B4B]"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                Custom...
+              </button>
+            </div>
+            {filingType === "Custom" && (
+              <Input
+                placeholder="e.g. California Franchise Tax Extension"
+                value={customType}
+                onChange={(e) => setCustomType(e.target.value)}
+                className="mt-2"
+              />
+            )}
+          </div>
+
+          {/* Jurisdiction + Due date */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="jurisdiction">Jurisdiction</Label>
+              <select
+                id="jurisdiction"
+                value={jurisdiction}
+                onChange={(e) => setJurisdiction(e.target.value)}
+                className="mt-1.5 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                {US_STATES_AND_FEDERAL.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="dueDate">Due date</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+
+          {/* Amount */}
+          <div>
+            <Label htmlFor="amount">Amount (optional)</Label>
+            <div className="relative mt-1.5">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label htmlFor="notes">Notes (optional)</Label>
+            <textarea
+              id="notes"
+              className="mt-1.5 w-full h-20 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+              placeholder="Confirmation number, reference, instructions..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+          {/* Status */}
+          <div>
+            <Label className="mb-2 block">Status</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {(["pending", "completed", "not_required"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatus(s)}
+                  className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${
+                    status === s
+                      ? "border-[#1B2B4B] bg-[#1B2B4B]/5 font-semibold text-[#1B2B4B]"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  {s === "not_required" ? "N/A" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Filed date (if completed) */}
+          {status === "completed" && (
+            <div>
+              <Label htmlFor="filedAt">Date filed</Label>
+              <Input
+                id="filedAt"
+                type="date"
+                value={filedAt}
+                onChange={(e) => setFiledAt(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+          )}
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button variant="outline" className="flex-1 border-slate-200" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            className="flex-1 bg-[#1B2B4B] hover:bg-[#243461] text-white"
+            disabled={!canSubmit || saving}
+            onClick={handleSave}
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
+            ) : (
+              <><Plus className="w-4 h-4 mr-2" />Add filing</>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function MarkFiledModal({
   filing,
@@ -177,8 +430,10 @@ function MarkFiledModal({
 
 export default function CompliancePage() {
   const [filings, setFilings] = useState<FilingWithCompany[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [markingFiling, setMarkingFiling] = useState<FilingWithCompany | null>(null)
+  const [addingFiling, setAddingFiling] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -190,12 +445,13 @@ export default function CompliancePage() {
       supabase.from("filings").select("*").order("due_date", { ascending: true }),
       supabase.from("companies").select("*"),
     ])
-    const companies = companiesData ?? []
+    const companiesList = companiesData ?? []
     const combined = (filingsData ?? []).map((f) => ({
       ...f,
-      company: companies.find((c: Company) => c.id === f.company_id),
+      company: companiesList.find((c: Company) => c.id === f.company_id),
     }))
     setFilings(combined)
+    setCompanies(companiesList)
     setLoading(false)
   }
 
@@ -225,9 +481,30 @@ export default function CompliancePage() {
         />
       )}
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-1">Compliance</h1>
-        <p className="text-slate-500">All filings, deadlines, and obligations across your entities.</p>
+      {addingFiling && (
+        <AddFilingModal
+          companies={companies}
+          onClose={() => setAddingFiling(false)}
+          onSuccess={() => {
+            setAddingFiling(false)
+            setLoading(true)
+            loadData()
+          }}
+        />
+      )}
+
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Compliance</h1>
+          <p className="text-slate-500">All filings, deadlines, and obligations across your entities.</p>
+        </div>
+        <Button
+          className="bg-[#1B2B4B] hover:bg-[#243461] text-white flex items-center gap-2"
+          onClick={() => setAddingFiling(true)}
+        >
+          <Plus className="w-4 h-4" />
+          Add filing
+        </Button>
       </div>
 
       {/* Summary */}
@@ -253,7 +530,14 @@ export default function CompliancePage() {
         <div className="bg-white rounded-xl border border-dashed border-slate-200 p-12 text-center">
           <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-semibold text-slate-700 mb-1">No filings yet</h3>
-          <p className="text-slate-400 text-sm">Filings will appear here once added to your account.</p>
+          <p className="text-slate-400 text-sm mb-4">Add your first filing to start tracking deadlines.</p>
+          <Button
+            className="bg-[#1B2B4B] hover:bg-[#243461] text-white"
+            onClick={() => setAddingFiling(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add filing
+          </Button>
         </div>
       ) : (
         <>
