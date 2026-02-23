@@ -11,6 +11,7 @@ const articleSlugs = [
   "international-founder-us-entity",
   "enrolled-agent-explainer",
   "delaware-franchise-tax-guide",
+  "boi-report-guide",
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -29,6 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/international`,       lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE_URL}/contact`,             lastModified: now, changeFrequency: "yearly",  priority: 0.5 },
     { url: `${BASE_URL}/faq`,                 lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/docs`,                lastModified: now, changeFrequency: "monthly", priority: 0.7 },
 
     // Resource articles
     ...articleSlugs.map((slug) => ({

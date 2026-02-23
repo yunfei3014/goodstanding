@@ -15,6 +15,7 @@ const footerLinks = {
     { label: "Changelog", href: "/changelog" },
     { label: "Resources", href: "/resources" },
     { label: "FAQ", href: "/faq" },
+    { label: "API Docs", href: "/docs" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy" },
