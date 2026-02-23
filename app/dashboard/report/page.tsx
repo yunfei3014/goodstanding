@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { createClient } from "@/lib/supabase"
 import { useCompany } from "@/lib/company-context"
 import type { Filing, Document, GovernmentInteraction } from "@/lib/supabase"
@@ -16,6 +16,9 @@ import {
   Phone,
   FolderOpen,
   Clock,
+  Link2,
+  RotateCcw,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -65,6 +68,8 @@ function exportCSV(filings: Filing[], companyName: string) {
 
 // ─── component ──────────────────────────────────────────────────────────────
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://goodstanding.ai"
+
 export default function ReportPage() {
   const { selectedCompany } = useCompany()
   const [filings, setFilings] = useState<Filing[]>([])
@@ -72,6 +77,44 @@ export default function ReportPage() {
   const [interactions, setInteractions] = useState<GovernmentInteraction[]>([])
   const [loading, setLoading] = useState(true)
   const reportRef = useRef<HTMLDivElement>(null)
+  const [shareLoading, setShareLoading] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+  const [shareRotating, setShareRotating] = useState(false)
+
+  const copyShareLink = useCallback(async () => {
+    if (!selectedCompany) return
+    setShareLoading(true)
+    try {
+      const res = await fetch(`/api/status-token?companyId=${selectedCompany.id}`)
+      const { token } = await res.json()
+      const url = `${BASE_URL}/status/${selectedCompany.id}/${token}`
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2500)
+    } finally {
+      setShareLoading(false)
+    }
+  }, [selectedCompany])
+
+  const rotateShareLink = useCallback(async () => {
+    if (!selectedCompany) return
+    if (!confirm("Rotate the share link? The old link will stop working immediately.")) return
+    setShareRotating(true)
+    try {
+      const res = await fetch("/api/status-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyId: selectedCompany.id }),
+      })
+      const { token } = await res.json()
+      const url = `${BASE_URL}/status/${selectedCompany.id}/${token}`
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2500)
+    } finally {
+      setShareRotating(false)
+    }
+  }, [selectedCompany])
 
   useEffect(() => {
     if (!selectedCompany) return
@@ -143,7 +186,24 @@ export default function ReportPage() {
             <h1 className="text-2xl font-bold text-slate-900 mb-1">Compliance Report</h1>
             <p className="text-slate-500 text-sm">Shareable summary for lawyers, accountants, or board members.</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+            <button
+              onClick={copyShareLink}
+              disabled={shareLoading}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+              title="Copy public status link"
+            >
+              {shareLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+              {shareCopied ? "Copied!" : "Share status"}
+            </button>
+            <button
+              onClick={rotateShareLink}
+              disabled={shareRotating}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              title="Rotate share link (invalidates old link)"
+            >
+              {shareRotating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+            </button>
             <button
               onClick={() => exportCSV(filings, selectedCompany.name)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"

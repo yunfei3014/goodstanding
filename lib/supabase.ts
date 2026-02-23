@@ -22,6 +22,7 @@ export type Company = {
   status: "good_standing" | "attention_needed" | "action_required"
   formed_at?: string
   created_at: string
+  status_token?: string
 }
 
 export type Filing = {
