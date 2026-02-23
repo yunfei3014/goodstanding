@@ -328,7 +328,7 @@ function IcalPanel({
   const [copied, setCopied] = useState(false)
 
   const feedUrl = prefs.generated && prefs.token
-    ? `https://goodstanding.app/api/cal/${userId}/${prefs.token}.ics`
+    ? `https://goodstanding.ai/api/cal/${userId}/${prefs.token}.ics`
     : null
 
   function handleGenerate() {

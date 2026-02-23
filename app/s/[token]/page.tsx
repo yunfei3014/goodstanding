@@ -262,7 +262,7 @@ export default function StatusPage() {
               Print / Save PDF
             </button>
             <a
-              href="https://goodstanding.app"
+              href="https://goodstanding.ai"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 flex-1 justify-center py-2.5 px-4 bg-[#0F1829] rounded-xl text-sm font-semibold text-white hover:bg-[#1B2B4B] transition-colors shadow-sm"
@@ -301,7 +301,7 @@ function InvalidPage() {
         This compliance status link is invalid or has expired. Ask the company to generate a new one from their GoodStanding.ai dashboard.
       </p>
       <a
-        href="https://goodstanding.app"
+        href="https://goodstanding.ai"
         className="mt-6 text-sm font-semibold text-emerald-600 hover:underline"
       >
         Go to GoodStanding.ai →

@@ -371,7 +371,7 @@ export default function TeamPage() {
   }
 
   function handleCopyLink(id: string) {
-    navigator.clipboard.writeText(`https://goodstanding.app/invite/${id}`).catch(() => {})
+    navigator.clipboard.writeText(`https://goodstanding.ai/invite/${id}`).catch(() => {})
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
