@@ -1,7 +1,5 @@
 import { NextRequest } from "next/server"
 
-export const runtime = "edge"
-
 type ChatMessage = {
   role: "user" | "assistant"
   content: string
