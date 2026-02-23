@@ -26,6 +26,7 @@ import {
   XCircle,
   CheckCircle2,
   ArrowRight,
+  Activity,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/dashboard/compliance", icon: FileCheck, label: "Compliance" },
   { href: "/dashboard/documents", icon: FolderOpen, label: "Documents" },
   { href: "/dashboard/calendar", icon: CalendarDays, label: "Calendar" },
+  { href: "/dashboard/activity", icon: Activity, label: "Activity" },
   { href: "/dashboard/government", icon: Phone, label: "Government Liaison" },
   { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ]
