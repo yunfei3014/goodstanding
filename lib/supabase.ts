@@ -17,6 +17,7 @@ export type Company = {
   name: string
   entity_type: "llc" | "c_corp" | "s_corp"
   state_of_incorporation: string
+  plan: "launch" | "essentials" | "growth" | "scale"
   ein?: string
   status: "good_standing" | "attention_needed" | "action_required"
   formed_at?: string
