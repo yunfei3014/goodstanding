@@ -270,6 +270,22 @@ export default function SettingsPage() {
         setUser({ id: authUser.id, email: authUser.email ?? "", full_name: authUser.user_metadata?.full_name ?? "" })
         setFullName(authUser.user_metadata?.full_name ?? "")
         setEmail(authUser.email ?? "")
+
+        // Load saved notification preferences
+        const { data: prefs } = await supabase
+          .from("user_preferences")
+          .select("email_enabled, email_overdue_alerts, email_weekly_digest")
+          .eq("user_id", authUser.id)
+          .single()
+
+        if (prefs) {
+          setNotifications((prev) => prev.map((n) => {
+            if (n.key === "filing_reminders") return { ...n, enabled: prefs.email_enabled ?? true }
+            if (n.key === "standing_alerts")   return { ...n, enabled: prefs.email_overdue_alerts ?? true }
+            if (n.key === "monthly_summary")   return { ...n, enabled: prefs.email_weekly_digest ?? false }
+            return n
+          }))
+        }
       }
       const { data: companiesData } = await supabase.from("companies").select("*").order("created_at", { ascending: true })
       setCompanies(companiesData ?? [])
@@ -539,11 +555,20 @@ export default function SettingsPage() {
               </div>
               <Toggle
                 enabled={item.enabled}
-                onToggle={() =>
-                  setNotifications((prev) =>
-                    prev.map((n) => n.key === item.key ? { ...n, enabled: !n.enabled } : n)
+                onToggle={async () => {
+                  const next = notifications.map((n) => n.key === item.key ? { ...n, enabled: !n.enabled } : n)
+                  setNotifications(next)
+                  // Persist to user_preferences
+                  if (!user) return
+                  const supabase = createClient()
+                  const filing  = next.find((n) => n.key === "filing_reminders")?.enabled ?? true
+                  const overdue = next.find((n) => n.key === "standing_alerts")?.enabled ?? true
+                  const digest  = next.find((n) => n.key === "monthly_summary")?.enabled ?? false
+                  await supabase.from("user_preferences").upsert(
+                    { user_id: user.id, email_enabled: filing, email_overdue_alerts: overdue, email_weekly_digest: digest },
+                    { onConflict: "user_id" }
                   )
-                }
+                }}
               />
             </div>
           ))}
