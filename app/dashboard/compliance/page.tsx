@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase"
 import type { Company, Filing } from "@/lib/supabase"
 import {
@@ -13,6 +15,8 @@ import {
   DollarSign,
   FileText,
   ArrowRight,
+  X,
+  Loader2,
 } from "lucide-react"
 
 function StatusBadge({ status }: { status: string }) {
@@ -30,27 +34,170 @@ function StatusIcon({ status }: { status: string }) {
 
 type FilingWithCompany = Filing & { company: Company | undefined }
 
+function MarkFiledModal({
+  filing,
+  onClose,
+  onSuccess,
+}: {
+  filing: FilingWithCompany
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const today = new Date().toISOString().split("T")[0]
+  const [filedAt, setFiledAt] = useState(today)
+  const [amount, setAmount] = useState(filing.amount ? String(filing.amount) : "")
+  const [notes, setNotes] = useState(filing.notes ?? "")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSubmit() {
+    setSaving(true)
+    setError("")
+    const supabase = createClient()
+    const { error: err } = await supabase
+      .from("filings")
+      .update({
+        status: "completed",
+        filed_at: filedAt,
+        ...(amount ? { amount: parseFloat(amount) } : {}),
+        ...(notes ? { notes } : {}),
+      })
+      .eq("id", filing.id)
+    setSaving(false)
+    if (err) {
+      setError(err.message)
+    } else {
+      onSuccess()
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-[#1B2B4B]">Mark as filed</h2>
+            <p className="text-slate-500 text-sm mt-0.5">{filing.type}</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Filing summary */}
+        <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-slate-400 text-xs mb-0.5">Entity</p>
+              <p className="font-semibold text-slate-800">{filing.company?.name ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-slate-400 text-xs mb-0.5">Jurisdiction</p>
+              <p className="font-semibold text-slate-800">{filing.state}</p>
+            </div>
+            <div>
+              <p className="text-slate-400 text-xs mb-0.5">Due date</p>
+              <p className="font-semibold text-slate-800">
+                {filing.due_date
+                  ? new Date(filing.due_date).toLocaleDateString("en-US", {
+                      month: "short", day: "numeric", year: "numeric",
+                    })
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-400 text-xs mb-0.5">Status</p>
+              <StatusBadge status={filing.status} />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="filedAt">Date filed</Label>
+            <Input
+              id="filedAt"
+              type="date"
+              value={filedAt}
+              onChange={(e) => setFiledAt(e.target.value)}
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="amount">Amount paid (optional)</Label>
+            <div className="relative mt-1.5">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="notes">Notes (optional)</Label>
+            <textarea
+              id="notes"
+              className="mt-1.5 w-full h-20 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 resize-none"
+              placeholder="Confirmation number, reference, or any notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button variant="outline" className="flex-1 border-slate-200" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+            disabled={saving || !filedAt}
+            onClick={handleSubmit}
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
+            ) : (
+              <><CheckCircle2 className="w-4 h-4 mr-2" />Confirm filed</>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CompliancePage() {
   const [filings, setFilings] = useState<FilingWithCompany[]>([])
   const [loading, setLoading] = useState(true)
+  const [markingFiling, setMarkingFiling] = useState<FilingWithCompany | null>(null)
 
   useEffect(() => {
-    const supabase = createClient()
-    async function load() {
-      const [{ data: filingsData }, { data: companiesData }] = await Promise.all([
-        supabase.from("filings").select("*").order("due_date", { ascending: true }),
-        supabase.from("companies").select("*"),
-      ])
-      const companies = companiesData ?? []
-      const combined = (filingsData ?? []).map((f) => ({
-        ...f,
-        company: companies.find((c: Company) => c.id === f.company_id),
-      }))
-      setFilings(combined)
-      setLoading(false)
-    }
-    load()
+    loadData()
   }, [])
+
+  async function loadData() {
+    const supabase = createClient()
+    const [{ data: filingsData }, { data: companiesData }] = await Promise.all([
+      supabase.from("filings").select("*").order("due_date", { ascending: true }),
+      supabase.from("companies").select("*"),
+    ])
+    const companies = companiesData ?? []
+    const combined = (filingsData ?? []).map((f) => ({
+      ...f,
+      company: companies.find((c: Company) => c.id === f.company_id),
+    }))
+    setFilings(combined)
+    setLoading(false)
+  }
 
   if (loading) {
     return (
@@ -66,6 +213,18 @@ export default function CompliancePage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+      {markingFiling && (
+        <MarkFiledModal
+          filing={markingFiling}
+          onClose={() => setMarkingFiling(null)}
+          onSuccess={() => {
+            setMarkingFiling(null)
+            setLoading(true)
+            loadData()
+          }}
+        />
+      )}
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-1">Compliance</h1>
         <p className="text-slate-500">All filings, deadlines, and obligations across your entities.</p>
@@ -128,11 +287,15 @@ export default function CompliancePage() {
                     </div>
                     <div className="text-right flex-shrink-0">
                       {filing.amount && (
-                        <p className="text-sm font-semibold text-red-700 flex items-center gap-1">
+                        <p className="text-sm font-semibold text-red-700 flex items-center gap-1 justify-end">
                           <DollarSign className="w-3.5 h-3.5" />{filing.amount}
                         </p>
                       )}
-                      <Button size="sm" className="mt-2 bg-[#1B2B4B] text-white hover:bg-[#243461]">
+                      <Button
+                        size="sm"
+                        className="mt-2 bg-[#1B2B4B] text-white hover:bg-[#243461]"
+                        onClick={() => setMarkingFiling(filing)}
+                      >
                         Resolve <ArrowRight className="w-3 h-3 ml-1" />
                       </Button>
                     </div>
@@ -182,9 +345,7 @@ export default function CompliancePage() {
                             <p className="text-sm font-semibold text-amber-700">
                               {filing.due_date
                                 ? new Date(filing.due_date).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
+                                    month: "short", day: "numeric", year: "numeric",
                                   })
                                 : "—"}
                             </p>
@@ -199,7 +360,12 @@ export default function CompliancePage() {
                           <StatusBadge status={filing.status} />
                         </td>
                         <td className="px-5 py-4">
-                          <Button variant="outline" size="sm" className="text-xs border-slate-200">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs border-slate-200 hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50"
+                            onClick={() => setMarkingFiling(filing)}
+                          >
                             Approve & file
                           </Button>
                         </td>
@@ -227,6 +393,7 @@ export default function CompliancePage() {
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Filed date</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Amount</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Status</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Notes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -248,9 +415,7 @@ export default function CompliancePage() {
                           <p className="text-sm text-slate-500">
                             {filing.filed_at
                               ? new Date(filing.filed_at).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
+                                  month: "short", day: "numeric", year: "numeric",
                                 })
                               : "—"}
                           </p>
@@ -262,6 +427,11 @@ export default function CompliancePage() {
                         </td>
                         <td className="px-5 py-4">
                           <StatusBadge status={filing.status} />
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="text-xs text-slate-400 max-w-48 truncate">
+                            {filing.notes ?? "—"}
+                          </p>
                         </td>
                       </tr>
                     ))}
