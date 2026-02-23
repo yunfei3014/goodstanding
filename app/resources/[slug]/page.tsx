@@ -554,6 +554,118 @@ const articles: Record<string, Article> = {
       </>
     ),
   },
+
+  "boi-report-guide": {
+    slug: "boi-report-guide",
+    title: "BOI Report Guide: What Startups Need to Know About FinCEN",
+    description: "The Corporate Transparency Act requires most small US companies to file a Beneficial Ownership Information report with FinCEN. Here's who has to file, what to disclose, and what happens if you miss the deadline.",
+    category: "Compliance",
+    readTime: "6 min read",
+    content: (
+      <>
+        <p>The Corporate Transparency Act (CTA), which went into effect January 1, 2024, created a new federal filing requirement that catches most startups off guard: the Beneficial Ownership Information (BOI) report. You file it with FinCEN — the Financial Crimes Enforcement Network, a bureau of the U.S. Treasury.</p>
+        <p>This isn't a tax filing and it's not with the SEC. It's a new standalone requirement, and the penalties for missing it are serious.</p>
+
+        <h2>What is the BOI report?</h2>
+        <p>The BOI report discloses who ultimately owns or controls a company to the federal government. Congress passed the Corporate Transparency Act to combat money laundering, tax evasion, and other financial crimes that exploit anonymous shell companies.</p>
+        <p>Most legitimate startups are required to file regardless — the law casts a wide net, and the exemptions are narrow.</p>
+
+        <h2>Who has to file?</h2>
+        <p>Any domestic corporation, LLC, or other entity created by filing with a state secretary of state must file — unless it qualifies for an exemption. This includes your Delaware C-corp.</p>
+
+        <h3>The exemptions (you probably don't qualify)</h3>
+        <p>There are 23 exemptions, but most require either:</p>
+        <ul>
+          <li>More than 20 full-time employees AND more than $5M in gross receipts AND a physical US office, or</li>
+          <li>Being a regulated entity (bank, credit union, public company, registered investment advisor, etc.)</li>
+        </ul>
+        <p>Pre-seed and seed-stage startups almost never qualify for an exemption. If you have fewer than 20 employees or under $5M in revenue, you're required to file.</p>
+
+        <h2>What do you have to disclose?</h2>
+        <p>The BOI report requires two categories of information:</p>
+
+        <h3>1. Company information</h3>
+        <ul>
+          <li>Legal name and any trade names (DBAs)</li>
+          <li>Current US address (principal place of business)</li>
+          <li>State of formation</li>
+          <li>IRS Taxpayer Identification Number (EIN)</li>
+        </ul>
+
+        <h3>2. Beneficial owner information</h3>
+        <p>For each beneficial owner — anyone who owns 25%+ of the company OR has "substantial control" (like a CEO or a major VC board member) — you must disclose:</p>
+        <ul>
+          <li>Full legal name</li>
+          <li>Date of birth</li>
+          <li>Current residential address</li>
+          <li>A photo ID (passport or driver's license), including the document number and an image of the document</li>
+        </ul>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 not-prose">
+          <div className="flex gap-3">
+            <div className="text-amber-600 text-lg">⚠️</div>
+            <div>
+              <p className="font-semibold text-amber-800 mb-1">Substantial control is broader than ownership</p>
+              <p className="text-amber-700 text-sm">Your CEO has substantial control even if they own 0% of the company. Senior officers and anyone who can direct major decisions may need to be reported. When in doubt, report them — the risk of under-reporting is greater than over-reporting.</p>
+            </div>
+          </div>
+        </div>
+
+        <h2>Deadlines</h2>
+        <ul>
+          <li><strong>Companies formed before January 1, 2024:</strong> were required to file by January 1, 2025.</li>
+          <li><strong>Companies formed in 2024:</strong> had 90 days from formation to file.</li>
+          <li><strong>Companies formed January 1, 2025 and after:</strong> have 30 days from formation to file.</li>
+          <li><strong>Updates:</strong> If anything changes (new owner, new address, someone leaves), you have 30 days to update the report.</li>
+        </ul>
+
+        <h2>Penalties for non-compliance</h2>
+        <p>The penalties are steep and accrue daily:</p>
+        <ul>
+          <li><strong>Civil penalty:</strong> $591 per day (adjusted for inflation) for willful violations</li>
+          <li><strong>Criminal penalty:</strong> Up to $10,000 and/or up to 2 years imprisonment for willful non-compliance or filing false information</li>
+        </ul>
+        <p>There's no "catch-up" grace period — the clock starts the moment your deadline passes.</p>
+
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 not-prose">
+          <p className="font-semibold text-slate-800 mb-2">Note on legal status</p>
+          <p className="text-slate-600 text-sm">The CTA has faced legal challenges. A 2024 federal district court ruling found it unconstitutional (NSBA v. Yellen), but that ruling applied only to NSBA members. FinCEN has continued enforcement for all other companies. As of our last update, the law remains in effect for most companies. Check FinCEN.gov for the latest status.</p>
+        </div>
+
+        <h2>How to file</h2>
+        <p>You file the BOI report through FinCEN's online portal (BOSS — Beneficial Ownership Secure System) at boiefiling.fincen.gov. The filing itself is free — there's no government fee.</p>
+        <p>The process involves:</p>
+        <ol>
+          <li>Creating an account at boiefiling.fincen.gov</li>
+          <li>Selecting "Create a BOIR" (Beneficial Ownership Information Report)</li>
+          <li>Entering company information</li>
+          <li>Adding each beneficial owner with their personal information and uploading ID images</li>
+          <li>Submitting — you receive a confirmation transcript</li>
+        </ol>
+
+        <h2>Ongoing obligations</h2>
+        <p>The BOI report isn't a one-time filing. Any time material information changes, you must update within 30 days:</p>
+        <ul>
+          <li>A founder sells shares below the 25% threshold</li>
+          <li>A new investor acquires 25%+</li>
+          <li>A CEO leaves and a new one takes over</li>
+          <li>A beneficial owner moves to a new address</li>
+          <li>A beneficial owner gets a new passport or driver's license</li>
+        </ul>
+        <p>Most early-stage startups will need to update their BOI report after each funding round.</p>
+
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 not-prose">
+          <div className="flex gap-3">
+            <div className="text-emerald-600 text-xl">✓</div>
+            <div>
+              <p className="font-semibold text-emerald-800 mb-1">GoodStanding.ai tracks BOI obligations</p>
+              <p className="text-emerald-700 text-sm">We flag BOI report deadlines and update requirements as part of your compliance calendar. When you close a funding round or have ownership changes, we remind you to update your FinCEN filing within the 30-day window.</p>
+            </div>
+          </div>
+        </div>
+      </>
+    ),
+  },
 }
 
 // ─── category styles ─────────────────────────────────────────────────────────

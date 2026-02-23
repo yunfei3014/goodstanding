@@ -89,6 +89,15 @@ const articles = [
     readTime: "7 min read",
     featured: false,
   },
+  {
+    slug: "boi-report-guide",
+    title: "BOI Report Guide: What Startups Need to Know About FinCEN",
+    description:
+      "The Corporate Transparency Act requires most small US companies to file a Beneficial Ownership Information report with FinCEN. Here's who has to file, what to disclose, and what happens if you miss the deadline.",
+    category: "Compliance",
+    readTime: "6 min read",
+    featured: false,
+  },
 ]
 
 const categories = ["All", "Formation", "Compliance", "Government Liaison", "International", "Foundation"]
