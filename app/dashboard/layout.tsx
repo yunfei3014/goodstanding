@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
 import type { Company } from "@/lib/supabase"
+import { generateDefaultFilings } from "@/lib/filings"
 import {
   Shield,
   LayoutDashboard,
@@ -92,16 +93,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         await supabase.auth.updateUser({ data: { pending_company: null } })
 
         if (newCompany) {
+          // Seed default compliance filings for new company
+          const defaultFilings = generateDefaultFilings(newCompany)
+          if (defaultFilings.length > 0) {
+            await supabase.from("filings").insert(defaultFilings)
+          }
           setCompanies([newCompany])
           setSelectedCompany(newCompany)
           setUser(prev => prev ? { ...prev, plan: newCompany.plan } : prev)
-          // Force page components to re-fetch now that company is in DB
+          // Force page components to re-fetch now that company + filings are in DB
           router.refresh()
         }
       } else if (existingCompanies && existingCompanies.length > 0) {
         setCompanies(existingCompanies)
         setSelectedCompany(existingCompanies[0])
         setUser(prev => prev ? { ...prev, plan: existingCompanies[0].plan } : prev)
+
+        // Seed filings for any company that has none yet
+        const { data: existingFilings } = await supabase
+          .from("filings")
+          .select("id")
+          .limit(1)
+        if (!existingFilings || existingFilings.length === 0) {
+          const allFilings = existingCompanies.flatMap((c: Company) => generateDefaultFilings(c))
+          if (allFilings.length > 0) {
+            await supabase.from("filings").insert(allFilings)
+            router.refresh()
+          }
+        }
       }
     }
 
