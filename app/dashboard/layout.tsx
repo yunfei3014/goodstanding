@@ -95,6 +95,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setCompanies([newCompany])
           setSelectedCompany(newCompany)
           setUser(prev => prev ? { ...prev, plan: newCompany.plan } : prev)
+          // Force page components to re-fetch now that company is in DB
+          router.refresh()
         }
       } else if (existingCompanies && existingCompanies.length > 0) {
         setCompanies(existingCompanies)
