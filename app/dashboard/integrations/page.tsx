@@ -518,9 +518,33 @@ export default function IntegrationsPage() {
     async function load() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserEmail(user.email ?? "")
-        setUserId(user.id)
+      if (!user) { setLoading(false); return }
+      setUserEmail(user.email ?? "")
+      setUserId(user.id)
+
+      // Load from Supabase first; fall back to localStorage for migration
+      const { data: dbPrefs } = await supabase
+        .from("user_preferences")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+
+      if (dbPrefs) {
+        setPrefs({
+          email: {
+            enabled: dbPrefs.email_enabled,
+            days: dbPrefs.email_days ?? [7, 30],
+            overdueAlerts: dbPrefs.email_overdue_alerts,
+            weeklyDigest: dbPrefs.email_weekly_digest,
+          },
+          slack: DEFAULT_PREFS.slack,
+          ical: {
+            generated: !!dbPrefs.ical_token,
+            token: dbPrefs.ical_token ?? "",
+          },
+        })
+      } else {
+        // Migrate from localStorage if present
         try {
           const raw = localStorage.getItem(`gs_integrations_${user.id}`)
           if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) })
@@ -531,11 +555,24 @@ export default function IntegrationsPage() {
     load()
   }, [])
 
-  function save(next: IntegrationPrefs) {
+  async function save(next: IntegrationPrefs) {
     setPrefs(next)
+    // Persist to localStorage for immediate reactivity
     try {
       localStorage.setItem(`gs_integrations_${userId}`, JSON.stringify(next))
     } catch {}
+    // Persist to Supabase so the reminder cron can read it
+    if (!userId) return
+    const supabase = createClient()
+    await supabase.from("user_preferences").upsert({
+      user_id: userId,
+      email_enabled: next.email.enabled,
+      email_days: next.email.days,
+      email_overdue_alerts: next.email.overdueAlerts,
+      email_weekly_digest: next.email.weeklyDigest,
+      ical_token: next.ical.token || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" })
   }
 
   if (loading) {
