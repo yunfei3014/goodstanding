@@ -353,7 +353,7 @@ export default function DashboardPage() {
           <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-semibold text-slate-700 mb-1">No companies yet</h3>
           <p className="text-slate-400 text-sm mb-4">Add your first company to get started.</p>
-          <Link href="/signup">
+          <Link href="/dashboard/add-company">
             <Button className="bg-[#1B2B4B] hover:bg-[#243461] text-white">Add your first company</Button>
           </Link>
         </div>
@@ -363,7 +363,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Your companies</h2>
-              <Link href="/signup" className="text-sm text-emerald-600 font-semibold hover:underline">
+              <Link href="/dashboard/add-company" className="text-sm text-emerald-600 font-semibold hover:underline">
                 + Add company
               </Link>
             </div>
