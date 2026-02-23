@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase"
 import type { Company, GovernmentInteraction } from "@/lib/supabase"
+import { useCompany } from "@/lib/company-context"
 import {
   Phone,
   CheckCircle2,
@@ -213,47 +214,47 @@ function UpdateInteractionModal({
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function GovernmentPage() {
+  const { companies, selectedCompany } = useCompany()
   const [requestOpen, setRequestOpen] = useState(false)
   const [requestType, setRequestType] = useState("")
   const [details, setDetails] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [interactions, setInteractions] = useState<InteractionWithCompany[]>([])
-  const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingInteraction, setUpdatingInteraction] = useState<InteractionWithCompany | null>(null)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (selectedCompany) loadData(selectedCompany.id)
+  }, [selectedCompany])
 
-  async function loadData() {
+  async function loadData(companyId: string) {
+    setLoading(true)
     const supabase = createClient()
-    const [{ data: interactionsData }, { data: companiesData }] = await Promise.all([
-      supabase.from("government_interactions").select("*").order("created_at", { ascending: false }),
-      supabase.from("companies").select("*"),
-    ])
-    const companiesList = companiesData ?? []
+    const { data: interactionsData } = await supabase
+      .from("government_interactions")
+      .select("*")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
     const combined = (interactionsData ?? []).map((i) => ({
       ...i,
-      company: companiesList.find((c: Company) => c.id === i.company_id),
+      company: companies.find((c: Company) => c.id === i.company_id),
     }))
     setInteractions(combined)
-    setCompanies(companiesList)
     setLoading(false)
   }
 
   async function handleSubmit() {
-    if (!requestType || companies.length === 0) return
+    if (!requestType || !selectedCompany) return
     setSubmitting(true)
     const supabase = createClient()
     await supabase.from("government_interactions").insert({
-      company_id: companies[0].id,
+      company_id: selectedCompany.id,
       type: requestType,
       agency: "Pending assignment",
       status: "scheduled",
       summary: details || "Request submitted — our Enrolled Agent will review shortly.",
     })
-    await loadData()
+    if (selectedCompany) await loadData(selectedCompany.id)
     setRequestOpen(false)
     setRequestType("")
     setDetails("")
@@ -280,8 +281,7 @@ export default function GovernmentPage() {
           onClose={() => setUpdatingInteraction(null)}
           onSuccess={() => {
             setUpdatingInteraction(null)
-            setLoading(true)
-            loadData()
+            if (selectedCompany) loadData(selectedCompany.id)
           }}
         />
       )}

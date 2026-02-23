@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase"
 import type { Company, Filing } from "@/lib/supabase"
+import { useCompany } from "@/lib/company-context"
 import {
   CheckCircle2,
   AlertCircle,
@@ -429,29 +430,29 @@ function MarkFiledModal({
 }
 
 export default function CompliancePage() {
+  const { companies, selectedCompany } = useCompany()
   const [filings, setFilings] = useState<FilingWithCompany[]>([])
-  const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [markingFiling, setMarkingFiling] = useState<FilingWithCompany | null>(null)
   const [addingFiling, setAddingFiling] = useState(false)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (selectedCompany) loadData(selectedCompany.id)
+  }, [selectedCompany])
 
-  async function loadData() {
+  async function loadData(companyId: string) {
+    setLoading(true)
     const supabase = createClient()
-    const [{ data: filingsData }, { data: companiesData }] = await Promise.all([
-      supabase.from("filings").select("*").order("due_date", { ascending: true }),
-      supabase.from("companies").select("*"),
-    ])
-    const companiesList = companiesData ?? []
+    const { data: filingsData } = await supabase
+      .from("filings")
+      .select("*")
+      .eq("company_id", companyId)
+      .order("due_date", { ascending: true })
     const combined = (filingsData ?? []).map((f) => ({
       ...f,
-      company: companiesList.find((c: Company) => c.id === f.company_id),
+      company: companies.find((c: Company) => c.id === f.company_id),
     }))
     setFilings(combined)
-    setCompanies(companiesList)
     setLoading(false)
   }
 
@@ -475,8 +476,7 @@ export default function CompliancePage() {
           onClose={() => setMarkingFiling(null)}
           onSuccess={() => {
             setMarkingFiling(null)
-            setLoading(true)
-            loadData()
+            if (selectedCompany) loadData(selectedCompany.id)
           }}
         />
       )}
@@ -487,8 +487,7 @@ export default function CompliancePage() {
           onClose={() => setAddingFiling(false)}
           onSuccess={() => {
             setAddingFiling(false)
-            setLoading(true)
-            loadData()
+            if (selectedCompany) loadData(selectedCompany.id)
           }}
         />
       )}

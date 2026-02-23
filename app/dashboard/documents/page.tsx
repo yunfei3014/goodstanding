@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase"
 import type { Company, Document } from "@/lib/supabase"
+import { useCompany } from "@/lib/company-context"
 import {
   FileText,
   Download,
@@ -43,8 +44,8 @@ function formatBytes(kb: number | null): string {
 }
 
 export default function DocumentsPage() {
+  const { companies, selectedCompany } = useCompany()
   const [docs, setDocs] = useState<DocumentWithCompany[]>([])
-  const [companies, setCompanies] = useState<Company[]>([])
   const [userId, setUserId] = useState<string>("")
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
@@ -59,25 +60,27 @@ export default function DocumentsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (selectedCompany) loadData(selectedCompany.id)
+  }, [selectedCompany])
 
-  async function loadData() {
+  // Keep upload company selector in sync with selected company
+  useEffect(() => {
+    if (selectedCompany && !selectedCompanyId) setSelectedCompanyId(selectedCompany.id)
+  }, [selectedCompany, selectedCompanyId])
+
+  async function loadData(companyId: string) {
+    setLoading(true)
     const supabase = createClient()
-    const [{ data: { user } }, { data: docsData }, { data: companiesData }] = await Promise.all([
+    const [{ data: { user } }, { data: docsData }] = await Promise.all([
       supabase.auth.getUser(),
-      supabase.from("documents").select("*").order("uploaded_at", { ascending: false }),
-      supabase.from("companies").select("*"),
+      supabase.from("documents").select("*").eq("company_id", companyId).order("uploaded_at", { ascending: false }),
     ])
-    const companiesList = companiesData ?? []
     const combined = (docsData ?? []).map((d) => ({
       ...d,
-      company: companiesList.find((c: Company) => c.id === d.company_id),
+      company: companies.find((c: Company) => c.id === d.company_id),
     }))
     setDocs(combined)
-    setCompanies(companiesList)
     if (user) setUserId(user.id)
-    if (companiesList.length > 0 && !selectedCompanyId) setSelectedCompanyId(companiesList[0].id)
     setLoading(false)
   }
 
@@ -128,7 +131,7 @@ export default function DocumentsPage() {
       return
     }
 
-    await loadData()
+    if (selectedCompany) await loadData(selectedCompany.id)
     closeUpload()
     setUploading(false)
   }

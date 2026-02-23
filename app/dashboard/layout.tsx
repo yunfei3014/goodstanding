@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
 import type { Company } from "@/lib/supabase"
 import { generateDefaultFilings } from "@/lib/filings"
+import { CompanyContext } from "@/lib/company-context"
 import {
   Shield,
   LayoutDashboard,
@@ -292,7 +293,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          {children}
+          <CompanyContext.Provider value={{ companies, selectedCompany }}>
+            {children}
+          </CompanyContext.Provider>
         </main>
       </div>
     </div>
