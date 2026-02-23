@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase"
 import type { Company, Filing, GovernmentInteraction } from "@/lib/supabase"
 import { SetupChecklist, type ChecklistItem } from "@/components/dashboard/SetupChecklist"
+import { ShareStatusModal } from "@/components/dashboard/ShareStatusModal"
 import {
   CheckCircle2,
   AlertCircle,
@@ -17,6 +18,7 @@ import {
   Calendar,
   Building2,
   TrendingUp,
+  Share2,
 } from "lucide-react"
 
 function StatusBadge({ status }: { status: string }) {
@@ -62,6 +64,7 @@ export default function DashboardPage() {
   const [firstName, setFirstName] = useState("")
   const [loading, setLoading] = useState(true)
   const [dismissedChecklists, setDismissedChecklists] = useState<Set<string>>(new Set())
+  const [sharingCompany, setSharingCompany] = useState<Company | null>(null)
 
   // Load dismissed state from localStorage
   useEffect(() => {
@@ -203,6 +206,14 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+      {sharingCompany && (
+        <ShareStatusModal
+          company={sharingCompany}
+          filings={filings}
+          onClose={() => setSharingCompany(null)}
+        />
+      )}
+
       {/* Welcome */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-1">
@@ -381,11 +392,22 @@ export default function DashboardPage() {
                         <span className="text-emerald-600">All clear</span>
                       )}
                     </div>
-                    <Link href="/dashboard/compliance">
-                      <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 text-xs">
-                        View all <ArrowRight className="w-3 h-3 ml-1" />
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-400 hover:text-slate-600 hover:bg-slate-50 text-xs"
+                        onClick={() => setSharingCompany(company)}
+                      >
+                        <Share2 className="w-3 h-3 mr-1" />
+                        Share
                       </Button>
-                    </Link>
+                      <Link href="/dashboard/compliance">
+                        <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 text-xs">
+                          View all <ArrowRight className="w-3 h-3 ml-1" />
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )
