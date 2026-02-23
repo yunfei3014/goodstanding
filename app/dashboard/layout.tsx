@@ -30,6 +30,7 @@ import {
   ArrowRight,
   Activity,
   Search,
+  ClipboardList,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -39,6 +40,7 @@ const navItems = [
   { href: "/dashboard/documents", icon: FolderOpen, label: "Documents" },
   { href: "/dashboard/calendar", icon: CalendarDays, label: "Calendar" },
   { href: "/dashboard/activity", icon: Activity, label: "Activity" },
+  { href: "/dashboard/report", icon: ClipboardList, label: "Report" },
   { href: "/dashboard/government", icon: Phone, label: "Government Liaison" },
   { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ]
