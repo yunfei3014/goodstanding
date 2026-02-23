@@ -41,9 +41,9 @@ export type Document = {
   company_id: string
   name: string
   type: string
+  storage_path: string | null
+  size_kb: number | null
   uploaded_at: string
-  size_kb: number
-  url?: string
 }
 
 export type GovernmentInteraction = {

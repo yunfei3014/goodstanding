@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase"
@@ -11,47 +11,140 @@ import {
   Upload,
   FolderOpen,
   Search,
+  X,
+  File,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
-const typeColors: Record<string, string> = {
+const DOC_TYPES = ["Formation", "Tax", "Filing", "Agreement", "Government Notice", "Other"]
+
+const typeVariants: Record<string, "blue" | "green" | "yellow" | "red" | "navy" | "default"> = {
   Formation: "blue",
-  Tax: "purple",
-  Filing: "emerald",
-  Agreement: "amber",
+  Tax: "default",
+  Filing: "green",
+  Agreement: "yellow",
+  "Government Notice": "navy",
+  Other: "default",
 }
 
 function TypeBadge({ type }: { type: string }) {
-  const color = typeColors[type] || "default"
-  return <Badge variant={color as "blue" | "green" | "yellow" | "red" | "navy" | "default"}>{type}</Badge>
+  return <Badge variant={typeVariants[type] ?? "default"}>{type}</Badge>
 }
 
 type DocumentWithCompany = Document & { company: Company | undefined }
 
+function formatBytes(kb: number | null): string {
+  if (!kb) return "—"
+  if (kb < 1024) return `${kb} KB`
+  return `${(kb / 1024).toFixed(1)} MB`
+}
+
 export default function DocumentsPage() {
   const [docs, setDocs] = useState<DocumentWithCompany[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
+  const [userId, setUserId] = useState<string>("")
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
 
+  // Upload modal state
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [docType, setDocType] = useState("")
+  const [selectedCompanyId, setSelectedCompanyId] = useState("")
+  const [uploading, setUploading] = useState(false)
+  const [uploadMsg, setUploadMsg] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
-    const supabase = createClient()
-    async function load() {
-      const [{ data: docsData }, { data: companiesData }] = await Promise.all([
-        supabase.from("documents").select("*").order("uploaded_at", { ascending: false }),
-        supabase.from("companies").select("*"),
-      ])
-      const companiesList = companiesData ?? []
-      const combined = (docsData ?? []).map((d) => ({
-        ...d,
-        company: companiesList.find((c: Company) => c.id === d.company_id),
-      }))
-      setDocs(combined)
-      setCompanies(companiesList)
-      setLoading(false)
-    }
-    load()
+    loadData()
   }, [])
+
+  async function loadData() {
+    const supabase = createClient()
+    const [{ data: { user } }, { data: docsData }, { data: companiesData }] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase.from("documents").select("*").order("uploaded_at", { ascending: false }),
+      supabase.from("companies").select("*"),
+    ])
+    const companiesList = companiesData ?? []
+    const combined = (docsData ?? []).map((d) => ({
+      ...d,
+      company: companiesList.find((c: Company) => c.id === d.company_id),
+    }))
+    setDocs(combined)
+    setCompanies(companiesList)
+    if (user) setUserId(user.id)
+    if (companiesList.length > 0 && !selectedCompanyId) setSelectedCompanyId(companiesList[0].id)
+    setLoading(false)
+  }
+
+  function openUpload() {
+    setSelectedFile(null)
+    setDocType("")
+    setUploadMsg("")
+    setUploadOpen(true)
+  }
+
+  function closeUpload() {
+    setUploadOpen(false)
+    setSelectedFile(null)
+    setDocType("")
+    setUploadMsg("")
+  }
+
+  async function handleUpload() {
+    if (!selectedFile || !docType || !selectedCompanyId || !userId) return
+    setUploading(true)
+    setUploadMsg("")
+
+    const supabase = createClient()
+    const safeName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, "_")
+    const storagePath = `${userId}/${selectedCompanyId}/${Date.now()}_${safeName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from("documents")
+      .upload(storagePath, selectedFile, { upsert: false })
+
+    if (uploadError) {
+      setUploadMsg(`Upload failed: ${uploadError.message}`)
+      setUploading(false)
+      return
+    }
+
+    const { error: dbError } = await supabase.from("documents").insert({
+      company_id: selectedCompanyId,
+      name: selectedFile.name,
+      type: docType,
+      storage_path: storagePath,
+      size_kb: Math.round(selectedFile.size / 1024),
+    })
+
+    if (dbError) {
+      setUploadMsg(`Database error: ${dbError.message}`)
+      setUploading(false)
+      return
+    }
+
+    await loadData()
+    closeUpload()
+    setUploading(false)
+  }
+
+  async function handleDownload(doc: DocumentWithCompany) {
+    if (!doc.storage_path) return
+    const supabase = createClient()
+    const { data, error } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(doc.storage_path, 60 * 60)
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, "_blank")
+    } else if (error) {
+      console.error("Download error:", error.message)
+    }
+  }
 
   const filtered = search
     ? docs.filter((d) => d.name.toLowerCase().includes(search.toLowerCase()))
@@ -72,11 +165,126 @@ export default function DocumentsPage() {
           <h1 className="text-2xl font-bold text-slate-900 mb-1">Documents</h1>
           <p className="text-slate-500">All formation documents, filings, and government correspondence in one place.</p>
         </div>
-        <Button className="bg-[#1B2B4B] hover:bg-[#243461] text-white flex items-center gap-2">
+        <Button
+          className="bg-[#1B2B4B] hover:bg-[#243461] text-white flex items-center gap-2"
+          onClick={openUpload}
+        >
           <Upload className="w-4 h-4" />
           Upload
         </Button>
       </div>
+
+      {/* Upload modal */}
+      {uploadOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-[#1B2B4B]">Upload document</h2>
+              <button onClick={closeUpload} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              {/* File picker */}
+              <div>
+                <Label className="mb-2 block">File</Label>
+                <div
+                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                    selectedFile
+                      ? "border-emerald-300 bg-emerald-50"
+                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {selectedFile ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <File className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="font-semibold text-slate-900 text-sm truncate">{selectedFile.name}</p>
+                        <p className="text-xs text-slate-400">{formatBytes(Math.round(selectedFile.size / 1024))}</p>
+                      </div>
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500 ml-auto flex-shrink-0" />
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                      <p className="text-sm text-slate-500">Click to select a file</p>
+                      <p className="text-xs text-slate-400 mt-1">PDF, DOC, DOCX, JPG, PNG</p>
+                    </>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+              </div>
+
+              {/* Document type */}
+              <div>
+                <Label className="mb-2 block">Document type</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {DOC_TYPES.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setDocType(type)}
+                      className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${
+                        docType === type
+                          ? "border-[#1B2B4B] bg-[#1B2B4B]/5 font-semibold text-[#1B2B4B]"
+                          : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Company selector (only shown when multiple companies) */}
+              {companies.length > 1 && (
+                <div>
+                  <Label className="mb-2 block">Company</Label>
+                  <select
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    value={selectedCompanyId}
+                    onChange={(e) => setSelectedCompanyId(e.target.value)}
+                  >
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {uploadMsg && (
+                <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{uploadMsg}</p>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button variant="outline" className="flex-1 border-slate-200" onClick={closeUpload}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-[#1B2B4B] hover:bg-[#243461] text-white"
+                disabled={!selectedFile || !docType || uploading}
+                onClick={handleUpload}
+              >
+                {uploading ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Uploading...</>
+                ) : (
+                  <><Upload className="w-4 h-4 mr-2" />Upload</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative mb-6">
@@ -111,13 +319,16 @@ export default function DocumentsPage() {
         <div className="bg-white rounded-xl border border-dashed border-slate-200 p-12 text-center">
           <FolderOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-semibold text-slate-700 mb-1">No documents yet</h3>
-          <p className="text-slate-400 text-sm">Upload formation documents, filings, or correspondence.</p>
+          <p className="text-slate-400 text-sm mb-4">Upload formation documents, filings, or correspondence.</p>
+          <Button className="bg-[#1B2B4B] hover:bg-[#243461] text-white" onClick={openUpload}>
+            <Upload className="w-4 h-4 mr-2" />
+            Upload document
+          </Button>
         </div>
       ) : (
         companies.map((company) => {
           const companyDocs = filtered.filter((d) => d.company_id === company.id)
           if (!companyDocs.length) return null
-
           return (
             <div key={company.id} className="mb-8">
               <h2 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -159,20 +370,18 @@ export default function DocumentsPage() {
                           </p>
                         </td>
                         <td className="px-5 py-4">
-                          <p className="text-sm text-slate-400">{doc.size_kb ? `${doc.size_kb} KB` : "—"}</p>
+                          <p className="text-sm text-slate-400">{formatBytes(doc.size_kb)}</p>
                         </td>
                         <td className="px-5 py-4">
-                          {doc.url ? (
-                            <a href={doc.url} target="_blank" rel="noopener noreferrer">
-                              <Button variant="ghost" size="sm" className="text-slate-500">
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </a>
-                          ) : (
-                            <Button variant="ghost" size="sm" className="text-slate-300" disabled>
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={doc.storage_path ? "text-slate-500 hover:text-slate-700" : "text-slate-300"}
+                            disabled={!doc.storage_path}
+                            onClick={() => handleDownload(doc)}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
                         </td>
                       </tr>
                     ))}

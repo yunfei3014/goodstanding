@@ -87,3 +87,27 @@ CREATE POLICY "Users see own documents" ON documents FOR ALL USING (
 CREATE POLICY "Users see own interactions" ON government_interactions FOR ALL USING (
   company_id IN (SELECT id FROM companies WHERE user_id = auth.uid())
 );
+
+-- Storage: documents bucket
+-- Run in Supabase Dashboard → Storage → New bucket → Name: "documents", Private (unchecked public)
+-- Then add these Storage policies in Dashboard → Storage → Policies:
+INSERT INTO storage.buckets (id, name, public) VALUES ('documents', 'documents', false)
+ON CONFLICT DO NOTHING;
+
+CREATE POLICY "Users upload own documents" ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'documents' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "Users read own documents" ON storage.objects
+  FOR SELECT USING (
+    bucket_id = 'documents' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "Users delete own documents" ON storage.objects
+  FOR DELETE USING (
+    bucket_id = 'documents' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+  );
