@@ -23,6 +23,7 @@ import {
   Calendar,
   User,
   Pencil,
+  Trash2,
 } from "lucide-react"
 
 function StatusBadge({ status }: { status: string }) {
@@ -222,10 +223,18 @@ export default function GovernmentPage() {
   const [interactions, setInteractions] = useState<InteractionWithCompany[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingInteraction, setUpdatingInteraction] = useState<InteractionWithCompany | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (selectedCompany) loadData(selectedCompany.id)
   }, [selectedCompany])
+
+  async function handleDeleteInteraction(id: string) {
+    const supabase = createClient()
+    await supabase.from("government_interactions").delete().eq("id", id)
+    setDeletingId(null)
+    if (selectedCompany) loadData(selectedCompany.id)
+  }
 
   async function loadData(companyId: string) {
     setLoading(true)
@@ -507,6 +516,17 @@ export default function GovernmentPage() {
                           <Pencil className="w-3.5 h-3.5 mr-1" />
                           Update
                         </Button>
+                        {deletingId === interaction.id ? (
+                          <div className="flex items-center gap-1 justify-center">
+                            <button onClick={() => handleDeleteInteraction(interaction.id)} className="text-xs text-red-600 font-semibold hover:underline">Delete?</button>
+                            <span className="text-slate-300">·</span>
+                            <button onClick={() => setDeletingId(null)} className="text-xs text-slate-400">Cancel</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setDeletingId(interaction.id)} className="text-slate-300 hover:text-red-400 transition-colors mx-auto" title="Remove interaction">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -568,13 +588,26 @@ export default function GovernmentPage() {
                           </p>
                         </td>
                         <td className="px-5 py-4">
-                          <button
-                            onClick={() => setUpdatingInteraction(item)}
-                            className="text-slate-400 hover:text-slate-600 transition-colors"
-                            title="Edit"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setUpdatingInteraction(item)}
+                              className="text-slate-400 hover:text-slate-600 transition-colors"
+                              title="Edit"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            {deletingId === item.id ? (
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => handleDeleteInteraction(item.id)} className="text-xs text-red-600 font-semibold hover:underline whitespace-nowrap">Delete?</button>
+                                <span className="text-slate-300">·</span>
+                                <button onClick={() => setDeletingId(null)} className="text-xs text-slate-400">Cancel</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setDeletingId(item.id)} className="text-slate-300 hover:text-red-400 transition-colors" title="Delete">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

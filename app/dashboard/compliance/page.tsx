@@ -19,6 +19,7 @@ import {
   X,
   Loader2,
   Plus,
+  Trash2,
 } from "lucide-react"
 
 const SUGGESTED_TYPES = [
@@ -435,10 +436,18 @@ export default function CompliancePage() {
   const [loading, setLoading] = useState(true)
   const [markingFiling, setMarkingFiling] = useState<FilingWithCompany | null>(null)
   const [addingFiling, setAddingFiling] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (selectedCompany) loadData(selectedCompany.id)
   }, [selectedCompany])
+
+  async function handleDeleteFiling(id: string) {
+    const supabase = createClient()
+    await supabase.from("filings").delete().eq("id", id)
+    setDeletingId(null)
+    if (selectedCompany) loadData(selectedCompany.id)
+  }
 
   async function loadData(companyId: string) {
     setLoading(true)
@@ -581,6 +590,19 @@ export default function CompliancePage() {
                       >
                         Resolve <ArrowRight className="w-3 h-3 ml-1" />
                       </Button>
+                      <div className="mt-2 flex justify-end">
+                        {deletingId === filing.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => handleDeleteFiling(filing.id)} className="text-xs text-red-600 font-semibold hover:underline">Delete?</button>
+                            <span className="text-red-200">·</span>
+                            <button onClick={() => setDeletingId(null)} className="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setDeletingId(filing.id)} className="text-red-200 hover:text-red-400 transition-colors" title="Remove filing">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -605,6 +627,7 @@ export default function CompliancePage() {
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Amount</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Status</th>
                       <th className="px-5 py-3" />
+                      <th className="px-3 py-3 w-8" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -652,6 +675,18 @@ export default function CompliancePage() {
                             Approve & file
                           </Button>
                         </td>
+                        <td className="px-3 py-4">
+                          {deletingId === filing.id ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <button onClick={() => handleDeleteFiling(filing.id)} className="text-xs text-red-600 font-semibold hover:underline whitespace-nowrap">Delete?</button>
+                              <button onClick={() => setDeletingId(null)} className="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setDeletingId(filing.id)} className="text-slate-300 hover:text-red-400 transition-colors" title="Remove filing">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -677,6 +712,7 @@ export default function CompliancePage() {
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Amount</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Status</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Notes</th>
+                      <th className="px-3 py-3 w-8" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -715,6 +751,18 @@ export default function CompliancePage() {
                           <p className="text-xs text-slate-400 max-w-48 truncate">
                             {filing.notes ?? "—"}
                           </p>
+                        </td>
+                        <td className="px-3 py-4">
+                          {deletingId === filing.id ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <button onClick={() => handleDeleteFiling(filing.id)} className="text-xs text-red-600 font-semibold hover:underline whitespace-nowrap">Delete?</button>
+                              <button onClick={() => setDeletingId(null)} className="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setDeletingId(filing.id)} className="text-slate-300 hover:text-red-400 transition-colors" title="Remove filing">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}

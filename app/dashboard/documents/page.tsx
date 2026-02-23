@@ -16,6 +16,7 @@ import {
   File,
   CheckCircle2,
   Loader2,
+  Trash2,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -57,6 +58,7 @@ export default function DocumentsPage() {
   const [selectedCompanyId, setSelectedCompanyId] = useState("")
   const [uploading, setUploading] = useState(false)
   const [uploadMsg, setUploadMsg] = useState("")
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -134,6 +136,16 @@ export default function DocumentsPage() {
     if (selectedCompany) await loadData(selectedCompany.id)
     closeUpload()
     setUploading(false)
+  }
+
+  async function handleDeleteDoc(doc: DocumentWithCompany) {
+    const supabase = createClient()
+    if (doc.storage_path) {
+      await supabase.storage.from("documents").remove([doc.storage_path])
+    }
+    await supabase.from("documents").delete().eq("id", doc.id)
+    setDeletingId(null)
+    if (selectedCompany) loadData(selectedCompany.id)
   }
 
   async function handleDownload(doc: DocumentWithCompany) {
@@ -347,6 +359,7 @@ export default function DocumentsPage() {
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Date</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Size</th>
                       <th className="px-5 py-3" />
+                      <th className="px-3 py-3 w-8" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -385,6 +398,18 @@ export default function DocumentsPage() {
                           >
                             <Download className="w-4 h-4" />
                           </Button>
+                        </td>
+                        <td className="px-3 py-4">
+                          {deletingId === doc.id ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <button onClick={() => handleDeleteDoc(doc)} className="text-xs text-red-600 font-semibold hover:underline whitespace-nowrap">Delete?</button>
+                              <button onClick={() => setDeletingId(null)} className="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setDeletingId(doc.id)} className="text-slate-300 hover:text-red-400 transition-colors" title="Delete document">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
