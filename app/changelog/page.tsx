@@ -27,6 +27,22 @@ type Entry = {
 const CHANGELOG: Entry[] = [
   {
     date: "February 2026",
+    version: "1.0",
+    title: "Slack integration, REST API v1, outgoing webhooks & developer platform",
+    description: "Developer-first release: real Slack alerts via Incoming Webhooks, a full REST API with API key management, HMAC-signed outgoing webhooks, and the BOI report compliance guide.",
+    changes: [
+      { type: "feature", text: "Slack Incoming Webhook integration — paste your webhook URL to receive overdue alerts, upcoming deadline alerts, and weekly digests directly in any Slack channel" },
+      { type: "feature", text: "Test button for Slack — verify the connection by sending a test message from the dashboard" },
+      { type: "feature", text: "REST API v1 — GET /api/v1/companies, /companies/{id}, /companies/{id}/filings with Bearer API key auth" },
+      { type: "feature", text: "API key management — create up to 5 named keys, view prefix + last-used date, revoke instantly" },
+      { type: "feature", text: "Outgoing webhooks — HMAC-SHA256 signed POST requests to any HTTPS endpoint for filing.overdue, filing.upcoming, and digest.weekly events" },
+      { type: "feature", text: "BOI report guide — new compliance resource covering FinCEN Beneficial Ownership Information filings, deadlines, penalties, and ongoing obligations" },
+      { type: "improvement", text: "Slack cron integration — send-reminders cron now fires Slack Block Kit messages alongside emails for all three event types" },
+      { type: "improvement", text: "Integrations page Developer section — API access and webhooks panels moved from Coming Soon to active" },
+    ],
+  },
+  {
+    date: "February 2026",
     version: "0.9",
     title: "Team collaboration, Stripe billing & email reminders",
     description: "Major release focused on making GoodStanding.ai a team product with real payment flows.",
