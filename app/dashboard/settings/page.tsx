@@ -17,6 +17,7 @@ import {
   Pencil,
   X,
   Loader2,
+  Download,
 } from "lucide-react"
 
 const PLAN_LABELS: Record<string, { label: string; price: string; features: string }> = {
@@ -556,6 +557,35 @@ export default function SettingsPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Export data */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Download className="w-4 h-4 text-slate-500" />
+          <h2 className="font-bold text-slate-900">Export data</h2>
+        </div>
+        <p className="text-xs text-slate-400 mb-5">
+          Download all your compliance data as a CSV or JSON file.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          {[
+            { label: "Filings (CSV)",     href: "/api/export?format=csv&type=filings"   },
+            { label: "Documents (CSV)",   href: "/api/export?format=csv&type=documents" },
+            { label: "Full export (CSV)", href: "/api/export?format=csv&type=all"       },
+            { label: "Full export (JSON)", href: "/api/export?format=json&type=all"     },
+          ].map(({ label, href }) => (
+            <a
+              key={href}
+              href={href}
+              download
+              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-400" />
+              {label}
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   )
