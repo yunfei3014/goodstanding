@@ -43,7 +43,18 @@ export async function GET(req: NextRequest) {
 
   // ── Load all users with email reminders enabled ──────────────────────────
 
-  const { data: prefs } = await supabase
+  type UserPref = {
+    user_id: string
+    email_days: number[]
+    email_overdue_alerts: boolean
+    email_weekly_digest: boolean
+    slack_webhook_url: string | null
+    slack_overdue_alerts: boolean
+    slack_upcoming_alerts: boolean
+    slack_weekly_digest: boolean
+  }
+
+  const { data: rawPrefs } = await supabase
     .from("user_preferences")
     .select(
       "user_id, email_days, email_overdue_alerts, email_weekly_digest, " +
@@ -51,7 +62,9 @@ export async function GET(req: NextRequest) {
     )
     .or("email_enabled.eq.true,slack_webhook_url.not.is.null")
 
-  if (!prefs?.length) {
+  const prefs = (rawPrefs ?? []) as UserPref[]
+
+  if (!prefs.length) {
     return NextResponse.json({ ok: true, emailsSent: 0, runAt: new Date().toISOString() })
   }
 
