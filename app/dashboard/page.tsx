@@ -95,7 +95,7 @@ function FilingHealthChart({ filings }: { filings: Filing[] }) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number | undefined, name: string) => [value ?? 0, name]}
+              formatter={(value: number | undefined, name: string | undefined) => [value ?? 0, name ?? ""]}
               contentStyle={{ fontSize: "11px", borderRadius: "8px", border: "1px solid #e2e8f0", padding: "4px 8px" }}
             />
           </PieChart>

@@ -561,6 +561,7 @@ const articles: Record<string, Article> = {
     description: "The Corporate Transparency Act requires most small US companies to file a Beneficial Ownership Information report with FinCEN. Here's who has to file, what to disclose, and what happens if you miss the deadline.",
     category: "Compliance",
     readTime: "6 min read",
+    publishedAt: "February 2026",
     content: (
       <>
         <p>The Corporate Transparency Act (CTA), which went into effect January 1, 2024, created a new federal filing requirement that catches most startups off guard: the Beneficial Ownership Information (BOI) report. You file it with FinCEN — the Financial Crimes Enforcement Network, a bureau of the U.S. Treasury.</p>
