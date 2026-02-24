@@ -1,6 +1,10 @@
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY ?? "MISSING")
+  return _resend
+}
 const FROM = "GoodStanding.ai <reminders@goodstanding.ai>"
 const DASHBOARD_URL = "https://goodstanding.ai/dashboard/compliance"
 
@@ -127,7 +131,7 @@ export async function sendDeadlineReminder(to: string, filings: UpcomingFiling[]
   View compliance dashboard →
 </a>`
 
-  return resend.emails.send({ from: FROM, to, subject, html: emailWrapper(content) })
+  return getResend().emails.send({ from: FROM, to, subject, html: emailWrapper(content) })
 }
 
 // ─── Send overdue alert ───────────────────────────────────────────────────────
@@ -160,7 +164,7 @@ export async function sendOverdueAlert(to: string, filings: OverdueFiling[]) {
   Resolve overdue filings →
 </a>`
 
-  return resend.emails.send({ from: FROM, to, subject, html: emailWrapper(content) })
+  return getResend().emails.send({ from: FROM, to, subject, html: emailWrapper(content) })
 }
 
 // ─── Send weekly digest ───────────────────────────────────────────────────────
@@ -199,7 +203,7 @@ ${upcomingBlock}
   Open compliance dashboard →
 </a>`
 
-  return resend.emails.send({ from: FROM, to, subject, html: emailWrapper(content) })
+  return getResend().emails.send({ from: FROM, to, subject, html: emailWrapper(content) })
 }
 
 // ─── Welcome email ────────────────────────────────────────────────────────────
@@ -246,7 +250,7 @@ export function sendWelcomeEmail(to: string, firstName: string, companyName: str
   <a href="https://goodstanding.ai/contact" style="color:#10b981;">goodstanding.ai/contact</a>.
 </p>`
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: "GoodStanding.ai <hello@goodstanding.ai>",
     to,
     subject: `Welcome to GoodStanding.ai — ${companyName} is live`,

@@ -3,7 +3,8 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+const getResend = () => _resend ?? (_resend = new Resend(process.env.RESEND_API_KEY ?? "MISSING"))
 const FROM = "GoodStanding.ai <team@goodstanding.ai>"
 
 /**
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
 </html>`
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to: email,
       subject: `${ownerEmail} invited you to GoodStanding.ai`,

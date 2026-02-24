@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+const getResend = () => _resend ?? (_resend = new Resend(process.env.RESEND_API_KEY ?? "MISSING"))
 
 /**
  * POST /api/contact
@@ -57,14 +58,14 @@ ${company ? `<p><strong>Company:</strong> ${company}</p>` : ""}
 
   try {
     await Promise.all([
-      resend.emails.send({
+      getResend().emails.send({
         from: "GoodStanding.ai <hello@goodstanding.ai>",
         to: "hello@goodstanding.ai",
         replyTo: email,
         subject: `Contact: ${name}${company ? ` (${company})` : ""}`,
         html: teamHtml,
       }),
-      resend.emails.send({
+      getResend().emails.send({
         from: "GoodStanding.ai <hello@goodstanding.ai>",
         to: email,
         subject: "We received your message — GoodStanding.ai",
