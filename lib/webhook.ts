@@ -15,8 +15,9 @@ export interface WebhookPayload {
  * Fire all configured webhooks for a user and event type.
  * Failures are silently absorbed — webhooks are best-effort.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function fireWebhooks(
-  supabase: ReturnType<typeof createClient>,
+  supabase: { from: (...args: any[]) => any },
   userId: string,
   event: WebhookEvent,
   data: Record<string, unknown>
