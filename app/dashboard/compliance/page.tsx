@@ -23,6 +23,24 @@ import {
   Pencil,
 } from "lucide-react"
 
+function daysUntil(dateStr: string): number {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(dateStr + "T12:00:00")
+  due.setHours(0, 0, 0, 0)
+  return Math.round((due.getTime() - today.getTime()) / 86400000)
+}
+
+function UrgencyLabel({ dueDate }: { dueDate: string }) {
+  const days = daysUntil(dueDate)
+  if (days < 0) return null
+  if (days === 0) return <span className="text-xs font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">Due today</span>
+  if (days === 1) return <span className="text-xs font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">Tomorrow</span>
+  if (days <= 7) return <span className="text-xs font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">{days}d left</span>
+  if (days <= 30) return <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full">{days}d left</span>
+  return <span className="text-xs text-slate-400">{days}d left</span>
+}
+
 const SUGGESTED_TYPES = [
   "BOI Report (FinCEN)",
   "Quarterly Estimated Tax",
@@ -885,15 +903,18 @@ export default function CompliancePage() {
                           <p className="text-sm text-slate-700">{filing.company?.name}</p>
                         </td>
                         <td className="px-5 py-4">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-amber-500" />
-                            <p className="text-sm font-semibold text-amber-700">
-                              {filing.due_date
-                                ? new Date(filing.due_date).toLocaleDateString("en-US", {
-                                    month: "short", day: "numeric", year: "numeric",
-                                  })
-                                : "—"}
-                            </p>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                              <p className="text-sm font-semibold text-amber-700">
+                                {filing.due_date
+                                  ? new Date(filing.due_date).toLocaleDateString("en-US", {
+                                      month: "short", day: "numeric", year: "numeric",
+                                    })
+                                  : "—"}
+                              </p>
+                            </div>
+                            {filing.due_date && <UrgencyLabel dueDate={filing.due_date} />}
                           </div>
                         </td>
                         <td className="px-5 py-4">

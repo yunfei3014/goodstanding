@@ -57,6 +57,24 @@ function FilingStatusLabel({ status }: { status: string }) {
   return <span className="text-xs text-amber-600 font-semibold">Pending</span>
 }
 
+function daysUntil(dateStr: string): number {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(dateStr + "T12:00:00")
+  due.setHours(0, 0, 0, 0)
+  return Math.round((due.getTime() - today.getTime()) / 86400000)
+}
+
+function DashboardUrgencyLabel({ dueDate }: { dueDate: string }) {
+  const days = daysUntil(dueDate)
+  if (days < 0) return null
+  if (days === 0) return <span className="text-[10px] font-semibold text-red-600">Today</span>
+  if (days === 1) return <span className="text-[10px] font-semibold text-red-600">Tomorrow</span>
+  if (days <= 7) return <span className="text-[10px] font-semibold text-red-600">{days}d</span>
+  if (days <= 30) return <span className="text-[10px] font-semibold text-amber-600">{days}d</span>
+  return null
+}
+
 const HEALTH_COLORS = { completed: "#10b981", pending: "#f59e0b", overdue: "#ef4444" }
 
 function FilingHealthChart({ filings }: { filings: Filing[] }) {
@@ -424,12 +442,15 @@ export default function DashboardPage() {
                           <p className="text-xs font-semibold text-slate-700 leading-tight">{filing.type}</p>
                           <p className="text-xs text-slate-400">{filing.state}</p>
                           {filing.due_date && (
-                            <p className="text-xs text-slate-400">
-                              {new Date(filing.due_date).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <p className="text-xs text-slate-400">
+                                {new Date(filing.due_date).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </p>
+                              {filing.status === "pending" && <DashboardUrgencyLabel dueDate={filing.due_date} />}
+                            </div>
                           )}
                         </div>
                       ))}
@@ -593,6 +614,9 @@ export default function DashboardPage() {
                             ? new Date(filing.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
                             : "—"}
                         </p>
+                        {filing.status !== "overdue" && filing.due_date && (
+                          <DashboardUrgencyLabel dueDate={filing.due_date} />
+                        )}
                         {filing.amount && (
                           <p className="text-xs text-slate-400">${filing.amount}</p>
                         )}
