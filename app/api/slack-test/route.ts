@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase-server"
 import { sendSlackMessage } from "@/lib/slack"
 
 /**
@@ -9,8 +8,7 @@ import { sendSlackMessage } from "@/lib/slack"
  * Requires an authenticated session to prevent abuse.
  */
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(cookieStore)
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
