@@ -1,24 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
-
-function supabaseFromCookies() {
-  const cookieStore = cookies()
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: () => {},
-      },
-    }
-  )
-}
+import { createClient } from "@/lib/supabase-server"
 
 /** GET /api/webhooks — list user's configured webhooks */
 export async function GET() {
-  const supabase = supabaseFromCookies()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -34,7 +19,7 @@ export async function GET() {
 
 /** POST /api/webhooks — create or update a webhook */
 export async function POST(req: NextRequest) {
-  const supabase = supabaseFromCookies()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -93,7 +78,7 @@ export async function POST(req: NextRequest) {
 
 /** PATCH /api/webhooks — toggle enabled state */
 export async function PATCH(req: NextRequest) {
-  const supabase = supabaseFromCookies()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -114,7 +99,7 @@ export async function PATCH(req: NextRequest) {
 
 /** DELETE /api/webhooks?id=<id> — remove a webhook */
 export async function DELETE(req: NextRequest) {
-  const supabase = supabaseFromCookies()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
