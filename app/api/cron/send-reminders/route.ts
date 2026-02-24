@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     )
     .or("email_enabled.eq.true,slack_webhook_url.not.is.null")
 
-  const prefs = (rawPrefs ?? []) as UserPref[]
+  const prefs = (rawPrefs ?? []) as unknown as UserPref[]
 
   if (!prefs.length) {
     return NextResponse.json({ ok: true, emailsSent: 0, runAt: new Date().toISOString() })
