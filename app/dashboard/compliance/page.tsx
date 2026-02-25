@@ -51,6 +51,7 @@ const SUGGESTED_TYPES = [
   "Business License Renewal",
   "Registered Agent Renewal",
   "Foreign Qualification",
+  "Commercial General Liability Insurance Renewal",
 ]
 
 const US_STATES_AND_FEDERAL = [

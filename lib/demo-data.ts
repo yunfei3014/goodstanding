@@ -55,6 +55,16 @@ export const demoFilings = [
     status: "pending",
     amount: 25,
   },
+  // Prism AI insurance (formed 2024-08-15, next renewal 2026-08-15)
+  {
+    id: "f6",
+    company_id: "comp-1",
+    type: "Commercial General Liability Insurance Renewal",
+    state: "Federal",
+    due_date: "2026-08-15",
+    status: "pending",
+    notes: "Annual policy renewal with current carrier.",
+  },
   // Beacon Health
   {
     id: "f4",
@@ -73,6 +83,16 @@ export const demoFilings = [
     due_date: "2026-03-01",
     status: "overdue",
     notes: "Company has employees in California. Registration required.",
+  },
+  // Beacon Health insurance (formed 2024-11-02, next renewal 2026-11-02)
+  {
+    id: "f7",
+    company_id: "comp-2",
+    type: "Commercial General Liability Insurance Renewal",
+    state: "Federal",
+    due_date: "2026-11-02",
+    status: "pending",
+    notes: "Annual policy renewal.",
   },
 ]
 

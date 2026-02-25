@@ -147,5 +147,21 @@ export function generateDefaultFilings(company: Company): FilingInsert[] {
     })
   }
 
+  // 6. Commercial General Liability Insurance Renewal
+  const insuranceDue = new Date(formationDate)
+  insuranceDue.setFullYear(insuranceDue.getFullYear() + 1)
+  // Advance to next future annual renewal if already past
+  while (insuranceDue < new Date()) {
+    insuranceDue.setFullYear(insuranceDue.getFullYear() + 1)
+  }
+  filings.push({
+    company_id: id,
+    type: "Commercial General Liability Insurance Renewal",
+    state: "Federal",
+    due_date: insuranceDue.toISOString().split("T")[0],
+    status: "pending",
+    notes: "Annual commercial insurance policy renewal.",
+  })
+
   return filings
 }
