@@ -21,23 +21,23 @@ import {
 const promises = [
   {
     icon: Building2,
-    title: "We form your startup right the first time.",
+    title: "We form your startup on your behalf.",
     description:
-      "Entity selection, incorporation, EIN, operating agreement — handled in days. AI-guided recommendations based on your specific situation. Free, because formation is table stakes.",
+      "Entity selection, incorporation, EIN, operating agreement — handled in days, on your behalf. AI-guided recommendations based on your specific situation. Free, because formation is table stakes.",
     highlight: "Free formation",
   },
   {
     icon: FileCheck,
-    title: "We keep you in good standing — automatically.",
+    title: "We keep you in good standing on your behalf.",
     description:
-      "Annual reports, franchise tax, foreign qualifications — monitored, prepared, and filed before you know they're due. One dashboard. Every entity. Every deadline. You never see red.",
+      "Annual reports, franchise tax, foreign qualifications — monitored, prepared, and filed on your behalf before you know they're due. One dashboard. Every entity. Every deadline. You never see red.",
     highlight: "Zero missed deadlines",
   },
   {
     icon: Phone,
-    title: "We talk to the government so you don't have to.",
+    title: "We call the government on your behalf.",
     description:
-      "IRS notice? We call them. State rejected a filing? We resolve it. We're Enrolled Agent licensed — the same credential that lets CPAs represent you before the IRS. Nobody else does this.",
+      "IRS notice? We call them on your behalf. State rejected a filing? We resolve it. We're Enrolled Agent licensed — the highest IRS credential, giving us unlimited authority to act on your behalf. Nobody else does this.",
     highlight: "EA licensed — nobody else does this",
   },
 ]
@@ -158,12 +158,12 @@ const competitors = [
 ]
 
 export const metadata: Metadata = {
-  title: "GoodStanding.ai — Your Startup's Co-Compliance Partner",
+  title: "GoodStanding.ai — Startup Compliance Handled On Your Behalf",
   description:
-    "Form your company, stay compliant, and handle government calls — automated. Enrolled Agent licensed. No missed deadlines, no IRS surprises.",
+    "We handle formation, filings, and government calls on behalf of your startup. Enrolled Agent licensed. No missed deadlines, no IRS surprises — ever.",
   openGraph: {
-    title: "GoodStanding.ai — Your Startup's Co-Compliance Partner",
-    description: "Startup compliance on autopilot. Formation, registered agent, and Enrolled Agent government liaison.",
+    title: "GoodStanding.ai — Startup Compliance Handled On Your Behalf",
+    description: "Formation, registered agent, compliance filings, and IRS calls — all handled on your behalf by Enrolled Agents.",
     url: "https://goodstanding.ai",
     siteName: "GoodStanding.ai",
     type: "website",
@@ -274,15 +274,14 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-[#1B2B4B] tracking-tight leading-[1.08] mb-6">
-            Your startup should
+            Your startup.
             <br />
-            never lose{" "}
-            <span className="text-emerald-500">good standing.</span>
+            <span className="text-emerald-500">Handled on your behalf.</span>
           </h1>
 
           <p className="text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-            We handle formation, filings, and the thing nobody else will do —
-            <strong className="text-slate-700"> calling the government on your behalf.</strong>
+            Formation, filings, and the government calls nobody else will make —
+            <strong className="text-slate-700"> we act on your startup&apos;s behalf so you never have to deal with compliance again.</strong>
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -484,17 +483,17 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <span className="text-emerald-400 text-sm font-semibold uppercase tracking-wider mb-4 block">
-                The EA Difference
+                Acting on your behalf
               </span>
               <h2 className="text-4xl font-bold text-white mb-6 leading-snug">
                 Every competitor can alert you.
                 <br />
-                Only we can call the IRS.
+                Only we can call the IRS on your behalf.
               </h2>
               <p className="text-slate-400 leading-relaxed mb-6">
                 An Enrolled Agent (EA) is the highest IRS credential — unlimited authority to represent
-                taxpayers. No startup compliance competitor has this license. When you get a government
-                notice, they send you an email. We pick up the phone.
+                taxpayers before the IRS. No startup compliance competitor has this license. When you get a government
+                notice, they send you an email. We act on your behalf and pick up the phone.
               </p>
               <div className="space-y-3">
                 {competitors.map((c, i) => (
@@ -555,7 +554,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-[#1B2B4B] mb-4">
-              Founders who never think about compliance
+              Founders whose compliance is handled on their behalf
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -734,11 +733,12 @@ export default function HomePage() {
       <section className="py-20 px-4 sm:px-6 bg-[#1B2B4B]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-            Keep your startup in good standing.
+            We keep your startup in good standing —
+            <br />
+            on your behalf.
           </h2>
           <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
-            Free to form. No credit card required. Your compliance dashboard
-            goes live immediately after formation.
+            Free to form. No credit card required. We handle everything on your behalf — your compliance dashboard goes live immediately after formation.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/signup">

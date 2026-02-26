@@ -40,8 +40,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
-              Your startup's co-compliance partner. We handle formation,
-              filings, and the government calls nobody else will make.
+              We handle formation, filings, and government calls on behalf of your startup. Compliance done right, so you never have to think about it.
             </p>
             <p className="text-xs text-slate-600 mt-6">
               GoodStanding.ai is not a law firm and does not provide legal

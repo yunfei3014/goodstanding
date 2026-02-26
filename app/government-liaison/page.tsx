@@ -133,18 +133,18 @@ export default function GovernmentLiaisonPage() {
             <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-8">
               <Award className="w-4 h-4 text-emerald-400" />
               <span className="text-sm text-emerald-400 font-medium">
-                Enrolled Agent licensed · Unlimited IRS representation authority
+                Enrolled Agent licensed · We represent you before the IRS on your behalf
               </span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl font-bold text-white mb-6 leading-[1.08]">
               When the IRS calls,
               <br />
-              <span className="text-emerald-400">we answer.</span>
+              <span className="text-emerald-400">we answer on your behalf.</span>
             </h1>
             <p className="text-xl text-slate-400 mb-10 leading-relaxed">
               When they don&apos;t pick up, we keep calling. Our Enrolled Agents handle every
-              government interaction so you never spend a day on hold again.
+              government interaction on your behalf — so you never spend a day on hold again.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -352,7 +352,7 @@ export default function GovernmentLiaisonPage() {
       <section className="py-20 px-4 sm:px-6 bg-[#1B2B4B]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
-            Government liaison is included in Growth and Scale.
+            We handle government liaison on your behalf — included in Growth and Scale.
           </h2>
           <p className="text-slate-400 text-lg mb-10">
             Growth: 2 government liaison calls/month. Scale: unlimited.
