@@ -751,7 +751,7 @@ export default function HomePage() {
               <Button
                 size="xl"
                 variant="outline"
-                className="border-white/20 text-white hover:bg-white/10 w-full sm:w-auto"
+                className="bg-transparent border-white/20 text-white hover:bg-white/10 w-full sm:w-auto"
               >
                 Got a government issue?
               </Button>

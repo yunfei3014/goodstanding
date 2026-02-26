@@ -437,7 +437,7 @@ export default function SettingsPage() {
             <Button className="bg-emerald-500 hover:bg-emerald-600 text-white text-sm">
               Upgrade to {PLAN_LABELS[nextPlan!].label}
             </Button>
-            <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 text-sm">
+            <Button variant="outline" className="bg-transparent border-white/20 text-white hover:bg-white/10 text-sm">
               Manage billing
             </Button>
           </div>

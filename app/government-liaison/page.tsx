@@ -158,7 +158,7 @@ export default function GovernmentLiaisonPage() {
                 <Button
                   size="xl"
                   variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10 w-full sm:w-auto"
+                  className="bg-transparent border-white/20 text-white hover:bg-white/10 w-full sm:w-auto"
                 >
                   Have an urgent issue?
                 </Button>
@@ -228,7 +228,7 @@ export default function GovernmentLiaisonPage() {
                         <span className="text-red-400 text-xs font-bold">✗</span>
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 w-20 text-right">{row.note}</span>
+                    <span className="text-xs text-slate-400 w-28 text-right shrink-0">{row.note}</span>
                   </div>
                 ))}
               </div>
@@ -381,7 +381,7 @@ export default function GovernmentLiaisonPage() {
               <Button
                 size="xl"
                 variant="outline"
-                className="border-white/20 text-white hover:bg-white/10 w-full sm:w-auto"
+                className="bg-transparent border-white/20 text-white hover:bg-white/10 w-full sm:w-auto"
               >
                 Talk to us first
               </Button>
