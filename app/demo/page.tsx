@@ -51,7 +51,7 @@ export default function DemoPage() {
       {/* Top banner */}
       <div className="bg-[#1B2B4B] text-white px-4 py-3 text-center">
         <p className="text-sm font-medium">
-          This is a <strong>live preview</strong> of the GoodStanding.ai dashboard with sample data.{" "}
+          This is an <strong>interactive demo</strong> with sample data — sidebar links go to the real dashboard.{" "}
           <Link href="/signup" className="underline font-bold text-emerald-300 hover:text-emerald-200 ml-1">
             Start free →
           </Link>
@@ -88,22 +88,23 @@ export default function DemoPage() {
           {/* Nav */}
           <nav className="flex-1 px-3 py-4 space-y-0.5">
             {[
-              { icon: TrendingUp, label: "Overview", active: true },
-              { icon: CheckCircle2, label: "Compliance" },
-              { icon: FolderOpen, label: "Documents" },
-              { icon: Calendar, label: "Calendar" },
-              { icon: Phone, label: "Gov't Liaison" },
-              { icon: Sparkles, label: "AI Assistant" },
-            ].map(({ icon: Icon, label, active }) => (
-              <div
+              { icon: TrendingUp, label: "Overview", href: "/dashboard", active: true },
+              { icon: CheckCircle2, label: "Compliance", href: "/dashboard/compliance" },
+              { icon: FolderOpen, label: "Documents", href: "/dashboard/documents" },
+              { icon: Calendar, label: "Calendar", href: "/dashboard/calendar" },
+              { icon: Phone, label: "Gov't Liaison", href: "/dashboard/government" },
+              { icon: Sparkles, label: "AI Assistant", href: "/dashboard/assistant" },
+            ].map(({ icon: Icon, label, href, active }) => (
+              <Link
                 key={label}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${
-                  active ? "bg-white/10 text-white" : "text-white/50"
+                href={href}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  active ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80 hover:bg-white/5"
                 }`}
               >
                 <Icon className={`w-4 h-4 ${active ? "text-emerald-400" : "text-white/30"}`} />
                 {label}
-              </div>
+              </Link>
             ))}
           </nav>
 

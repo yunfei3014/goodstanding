@@ -24,17 +24,17 @@ import { cn } from "@/lib/utils"
 
 const PLANS = [
   {
-    id: "starter",
-    name: "Starter",
+    id: "launch",
+    name: "Launch",
     price: 0,
     period: "/mo",
-    tagline: "Perfect for solo founders",
+    tagline: "Everything to start your company",
     features: [
       "1 company",
-      "10 filings tracked",
-      "5 documents stored",
-      "Compliance calendar",
-      "Email support",
+      "Entity formation (+ state fees)",
+      "EIN application",
+      "Operating agreement",
+      "30-day compliance guidance",
     ],
     limits: { companies: 1, filings: 10, documents: 5 },
     cta: "Current plan",
@@ -45,21 +45,20 @@ const PLANS = [
     bgColor: "bg-white",
   },
   {
-    id: "professional",
-    name: "Professional",
-    price: 49,
+    id: "essentials",
+    name: "Essentials",
+    price: 99,
     period: "/mo",
-    tagline: "For growing businesses",
+    tagline: "Formation → ongoing compliance",
     features: [
-      "3 companies",
-      "Unlimited filings",
-      "50 documents stored",
-      "Deadline reminders",
-      "Compliance reports & CSV export",
-      "Priority email support",
+      "Registered agent (1 state)",
+      "Compliance monitoring",
+      "Annual report filing",
+      "Document vault",
+      "Email support",
     ],
     limits: { companies: 3, filings: Infinity, documents: 50 },
-    cta: "Upgrade to Pro",
+    cta: "Upgrade to Essentials",
     ctaUpgrade: true,
     icon: Star,
     accentColor: "text-emerald-600",
@@ -68,21 +67,20 @@ const PLANS = [
     badge: "Most Popular",
   },
   {
-    id: "business",
-    name: "Business",
-    price: 149,
+    id: "growth",
+    name: "Growth",
+    price: 249,
     period: "/mo",
-    tagline: "For teams & portfolios",
+    tagline: "For startups raising or expanding",
     features: [
-      "10 companies",
-      "Unlimited filings",
-      "Unlimited documents",
-      "3 team member seats",
-      "API access",
-      "Slack + email alerts",
+      "Registered agent (up to 3 states)",
+      "2 government liaison calls/month",
+      "Proactive compliance alerts",
+      "Fundraise-readiness check",
+      "Priority support",
     ],
     limits: { companies: 10, filings: Infinity, documents: Infinity },
-    cta: "Upgrade to Business",
+    cta: "Upgrade to Growth",
     ctaUpgrade: true,
     icon: Users,
     accentColor: "text-blue-600",
@@ -90,21 +88,20 @@ const PLANS = [
     bgColor: "bg-white",
   },
   {
-    id: "enterprise",
-    name: "Enterprise",
-    price: null,
-    period: "",
-    tagline: "For large organizations",
+    id: "scale",
+    name: "Scale",
+    price: 499,
+    period: "/mo",
+    tagline: "Complex or scaling startups",
     features: [
-      "Unlimited companies",
-      "Unlimited everything",
-      "Unlimited team seats",
-      "Dedicated compliance manager",
-      "White-label options",
-      "SLA & priority support",
+      "Unlimited government liaison calls",
+      "Dedicated compliance lead",
+      "Multi-state expansion support",
+      "Quarterly compliance review",
+      "Tax prep discount",
     ],
     limits: { companies: Infinity, filings: Infinity, documents: Infinity },
-    cta: "Contact sales",
+    cta: "Upgrade to Scale",
     ctaUpgrade: true,
     icon: Shield,
     accentColor: "text-purple-600",
@@ -248,10 +245,10 @@ export default function BillingPage() {
   }
 
   // Determine current plan from the first company
-  const rawPlan = companies[0]?.plan ?? "starter"
-  const currentPlanId = ["starter", "professional", "business", "enterprise"].includes(rawPlan)
+  const rawPlan = companies[0]?.plan ?? "launch"
+  const currentPlanId = ["launch", "essentials", "growth", "scale"].includes(rawPlan)
     ? rawPlan
-    : "starter"
+    : "launch"
   const currentPlan = PLANS.find((p) => p.id === currentPlanId) ?? PLANS[0]
   const currentLimits = currentPlan.limits
 

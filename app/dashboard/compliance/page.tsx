@@ -374,7 +374,7 @@ function MarkFiledModal({
               <p className="text-slate-400 text-xs mb-0.5">Due date</p>
               <p className="font-semibold text-slate-800">
                 {filing.due_date
-                  ? new Date(filing.due_date).toLocaleDateString("en-US", {
+                  ? new Date(filing.due_date + "T12:00:00").toLocaleDateString("en-US", {
                       month: "short", day: "numeric", year: "numeric",
                     })
                   : "—"}
@@ -909,7 +909,7 @@ export default function CompliancePage() {
                               <Calendar className="w-3.5 h-3.5 text-amber-500" />
                               <p className="text-sm font-semibold text-amber-700">
                                 {filing.due_date
-                                  ? new Date(filing.due_date).toLocaleDateString("en-US", {
+                                  ? new Date(filing.due_date + "T12:00:00").toLocaleDateString("en-US", {
                                       month: "short", day: "numeric", year: "numeric",
                                     })
                                   : "—"}

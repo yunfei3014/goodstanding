@@ -333,7 +333,7 @@ const articles: Record<string, Article> = {
     title: "Good Standing: What It Is and Why Your Startup Can't Afford to Lose It",
     description:
       "\"Good standing\" is a legal status your company must maintain to operate, raise capital, and sign contracts. Here's what it means, how you lose it, and how we prevent that.",
-    category: "Foundation",
+    category: "Compliance",
     readTime: "5 min read",
     publishedAt: "February 2026",
     content: (

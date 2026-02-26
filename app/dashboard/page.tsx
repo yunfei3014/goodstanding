@@ -444,7 +444,7 @@ export default function DashboardPage() {
                           {filing.due_date && (
                             <div className="flex items-center gap-1 mt-0.5">
                               <p className="text-xs text-slate-400">
-                                {new Date(filing.due_date).toLocaleDateString("en-US", {
+                                {new Date(filing.due_date + "T12:00:00").toLocaleDateString("en-US", {
                                   month: "short",
                                   day: "numeric",
                                 })}
@@ -611,7 +611,7 @@ export default function DashboardPage() {
                           {filing.status === "overdue"
                             ? "Overdue"
                             : filing.due_date
-                            ? new Date(filing.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                            ? new Date(filing.due_date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
                             : "—"}
                         </p>
                         {filing.status !== "overdue" && filing.due_date && (
